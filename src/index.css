@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+
+@layer base {
+  :root {
+    --color-primary: #facc15; /* yellow-400 */
+    --color-primary-light: #fde047; /* yellow-300 */
+    --color-primary-dark: #eab308; /* yellow-600 */
+    --color-dark: #000000;
+    --color-gray-dark: #111827;
+    --color-gray-medium: #374151;
+    --color-gray-light: #9ca3af;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--color-dark);
+    color: white;
+    overflow-x: hidden;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-dark);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-primary);
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary-dark);
+  }
+
+  /* Selection Color */
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-dark);
+  }
+}
+
+@layer components {
+  /* Bold headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 900;
+    line-height: 1.1;
+  }
+
+  /* Animated gradient text */
+  .gradient-text {
+    background: linear-gradient(45deg, var(--color-primary), var(--color-primary-light));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Glow effect */
+  .glow {
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.3);
+  }
+
+  /* Button hover effects */
+  .btn-primary {
+    @apply bg-yellow-400 text-black font-bold px-8 py-4 rounded-full transition-all duration-300 hover:bg-yellow-300 hover:shadow-lg hover:shadow-yellow-400/30 transform hover:scale-105 flex items-center gap-2 cursor-pointer;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-yellow-400 text-yellow-400 font-bold px-6 py-3 rounded-full transition-all duration-300 hover:bg-yellow-400 hover:text-black;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:transform hover:scale-105 hover:shadow-2xl hover:shadow-yellow-400/20;
+  }
+}
+
+@layer utilities {
+  /* Text shadow for better readability */
+  .text-shadow {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Backdrop blur support */
+  .backdrop-blur-support {
+    @supports (backdrop-filter: blur(12px)) {
+      backdrop-filter: blur(12px);
+    }
+  }
+
+  /* Animation classes */
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(250, 204, 21, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(250, 204, 21, 0.8);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+}

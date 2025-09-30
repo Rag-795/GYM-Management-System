@@ -1,0 +1,552 @@
+import React, { useState } from 'react';
+import { 
+  Search, Plus, Filter, Download, Edit, Trash2, Eye, 
+  Mail, Phone, Calendar, Award, Clock, Star, Users,
+  X, Upload, FileText, DollarSign, TrendingUp
+} from 'lucide-react';
+import { Button } from '../../components/Button';
+import { Input } from '../../components/Input';
+import { Alert } from '../../components/Alert';
+
+const Trainers = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterSpecialty, setFilterSpecialty] = useState('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedTrainer, setSelectedTrainer] = useState(null);
+
+  // Form state for new trainer
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    gender: '',
+    address: '',
+    specialties: [],
+    certifications: '',
+    experience: '',
+    availability: '',
+    salary: '',
+    joinDate: '',
+    bio: ''
+  });
+
+  // Sample data
+  const trainers = [
+    {
+      id: 1,
+      firstName: 'Mike',
+      lastName: 'Chen',
+      email: 'mike.chen@fithub.com',
+      phone: '(555) 111-2222',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+      specialties: ['Weight Training', 'HIIT', 'CrossFit'],
+      certifications: ['ACE Certified', 'CPR', 'First Aid'],
+      experience: '5 years',
+      rating: 4.9,
+      totalClients: 45,
+      sessionsThisMonth: 142,
+      availability: 'Full-time',
+      joinDate: '2020-03-15',
+      status: 'active',
+      salary: '$4,500/month',
+      performance: 98
+    },
+    {
+      id: 2,
+      firstName: 'Sarah',
+      lastName: 'Johnson',
+      email: 'sarah.j@fithub.com',
+      phone: '(555) 333-4444',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+      specialties: ['Yoga', 'Pilates', 'Meditation'],
+      certifications: ['RYT-500', 'Pilates Instructor'],
+      experience: '8 years',
+      rating: 4.8,
+      totalClients: 38,
+      sessionsThisMonth: 128,
+      availability: 'Full-time',
+      joinDate: '2019-06-20',
+      status: 'active',
+      salary: '$5,200/month',
+      performance: 95
+    },
+    {
+      id: 3,
+      firstName: 'John',
+      lastName: 'Smith',
+      email: 'john.smith@fithub.com',
+      phone: '(555) 555-6666',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
+      specialties: ['Strength Training', 'Nutrition'],
+      certifications: ['NASM-CPT', 'Nutrition Specialist'],
+      experience: '3 years',
+      rating: 4.7,
+      totalClients: 32,
+      sessionsThisMonth: 115,
+      availability: 'Part-time',
+      joinDate: '2021-01-10',
+      status: 'active',
+      salary: '$2,800/month',
+      performance: 94
+    },
+    {
+      id: 4,
+      firstName: 'Emily',
+      lastName: 'Rodriguez',
+      email: 'emily.r@fithub.com',
+      phone: '(555) 777-8888',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100',
+      specialties: ['Cardio', 'Dance Fitness', 'Zumba'],
+      certifications: ['Zumba Instructor', 'Group Fitness'],
+      experience: '6 years',
+      rating: 4.9,
+      totalClients: 52,
+      sessionsThisMonth: 156,
+      availability: 'Full-time',
+      joinDate: '2018-11-05',
+      status: 'active',
+      salary: '$4,800/month',
+      performance: 97
+    }
+  ];
+
+  const specialties = [
+    'Weight Training', 'Cardio', 'HIIT', 'CrossFit', 'Yoga', 
+    'Pilates', 'Boxing', 'MMA', 'Dance Fitness', 'Zumba',
+    'Strength Training', 'Nutrition', 'Rehabilitation'
+  ];
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSpecialtyToggle = (specialty) => {
+    setFormData(prev => ({
+      ...prev,
+      specialties: prev.specialties.includes(specialty)
+        ? prev.specialties.filter(s => s !== specialty)
+        : [...prev.specialties, specialty]
+    }));
+  };
+
+  const handleAddTrainer = (e) => {
+    e.preventDefault();
+    console.log('Adding trainer:', formData);
+    setShowAddModal(false);
+    // Reset form
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      dateOfBirth: '',
+      gender: '',
+      address: '',
+      specialties: [],
+      certifications: '',
+      experience: '',
+      availability: '',
+      salary: '',
+      joinDate: '',
+      bio: ''
+    });
+  };
+
+  const handleViewTrainer = (trainer) => {
+    setSelectedTrainer(trainer);
+    setShowViewModal(true);
+  };
+
+  const filteredTrainers = trainers.filter(trainer => {
+    const fullName = `${trainer.firstName} ${trainer.lastName}`.toLowerCase();
+    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
+                         trainer.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterSpecialty === 'all' || 
+                         trainer.specialties.some(s => s.toLowerCase().includes(filterSpecialty.toLowerCase()));
+    return matchesSearch && matchesFilter;
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-black text-white">Trainers Management</h1>
+          <p className="text-gray-400 mt-1">Total Trainers: {trainers.length} • Active: {trainers.filter(t => t.status === 'active').length}</p>
+        </div>
+        <div className="flex gap-2 mt-4 sm:mt-0">
+          <Button variant="secondary" icon={Download}>
+            Export
+          </Button>
+          <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
+            Add Trainer
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Active Trainers</p>
+              <p className="text-2xl font-bold text-white">24</p>
+            </div>
+            <div className="bg-green-400/20 p-2 rounded">
+              <Users className="h-5 w-5 text-green-400" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Avg. Rating</p>
+              <p className="text-2xl font-bold text-white">4.8</p>
+            </div>
+            <div className="bg-yellow-400/20 p-2 rounded">
+              <Star className="h-5 w-5 text-yellow-400" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Sessions Today</p>
+              <p className="text-2xl font-bold text-white">68</p>
+            </div>
+            <div className="bg-blue-400/20 p-2 rounded">
+              <Clock className="h-5 w-5 text-blue-400" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Total Clients</p>
+              <p className="text-2xl font-bold text-white">342</p>
+            </div>
+            <div className="bg-purple-400/20 p-2 rounded">
+              <TrendingUp className="h-5 w-5 text-purple-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters and Search */}
+      <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search trainers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
+              />
+            </div>
+            <select
+              value={filterSpecialty}
+              onChange={(e) => setFilterSpecialty(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+            >
+              <option value="all">All Specialties</option>
+              {specialties.map(specialty => (
+                <option key={specialty} value={specialty}>{specialty}</option>
+              ))}
+            </select>
+            <select className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400">
+              <option value="">Availability</option>
+              <option value="full-time">Full-time</option>
+              <option value="part-time">Part-time</option>
+              <option value="contract">Contract</option>
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
+              <Filter className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Trainers Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTrainers.map((trainer) => (
+          <div key={trainer.id} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden hover:border-yellow-400/50 transition-all">
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={trainer.avatar} 
+                    alt={`${trainer.firstName} ${trainer.lastName}`}
+                    className="h-12 w-12 rounded-full"
+                  />
+                  <div>
+                    <h3 className="text-white font-semibold">
+                      {trainer.firstName} {trainer.lastName}
+                    </h3>
+                    <p className="text-gray-400 text-sm">{trainer.availability}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                  <span className="text-white text-sm font-medium">{trainer.rating}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-4">
+                <div>
+                  <p className="text-gray-400 text-xs mb-1">Specialties</p>
+                  <div className="flex flex-wrap gap-1">
+                    {trainer.specialties.slice(0, 3).map((specialty, idx) => (
+                      <span key={idx} className="px-2 py-1 bg-gray-800 text-gray-300 rounded text-xs">
+                        {specialty}
+                      </span>
+                    ))}
+                    {trainer.specialties.length > 3 && (
+                      <span className="px-2 py-1 bg-gray-800 text-gray-400 rounded text-xs">
+                        +{trainer.specialties.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-400 text-xs">Experience</p>
+                    <p className="text-white font-medium">{trainer.experience}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs">Clients</p>
+                    <p className="text-white font-medium">{trainer.totalClients}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs">Sessions/Month</p>
+                    <p className="text-white font-medium">{trainer.sessionsThisMonth}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400 text-xs">Performance</p>
+                    <p className="text-green-400 font-medium">{trainer.performance}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t border-gray-800">
+                <button 
+                  onClick={() => handleViewTrainer(trainer)}
+                  className="flex-1 px-3 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium"
+                >
+                  View Profile
+                </button>
+                <button className="px-3 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300 transition-colors text-sm font-medium">
+                  Assign Client
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add Trainer Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-800">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">Add New Trainer</h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddTrainer} className="p-6 space-y-6">
+              {/* Personal Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="First Name"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <Input
+                    label="Last Name"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <Input
+                    label="Phone"
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <Input
+                    label="Date of Birth"
+                    type="date"
+                    name="dateOfBirth"
+                    value={formData.dateOfBirth}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      Gender <span className="text-yellow-400">*</span>
+                    </label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+                      required
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">Professional Information</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      Specialties <span className="text-yellow-400">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {specialties.map(specialty => (
+                        <label key={specialty} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={formData.specialties.includes(specialty)}
+                            onChange={() => handleSpecialtyToggle(specialty)}
+                            className="rounded border-gray-600 text-yellow-400 focus:ring-yellow-400 mr-2"
+                          />
+                          <span className="text-gray-300 text-sm">{specialty}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Input
+                    label="Certifications"
+                    name="certifications"
+                    value={formData.certifications}
+                    onChange={handleInputChange}
+                    placeholder="e.g., ACE Certified, CPR, First Aid"
+                    required
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Years of Experience"
+                      type="number"
+                      name="experience"
+                      value={formData.experience}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <div className="mb-4">
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        Availability <span className="text-yellow-400">*</span>
+                      </label>
+                      <select
+                        name="availability"
+                        value={formData.availability}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+                        required
+                      >
+                        <option value="">Select Availability</option>
+                        <option value="full-time">Full-time</option>
+                        <option value="part-time">Part-time</option>
+                        <option value="contract">Contract</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Monthly Salary"
+                      type="number"
+                      name="salary"
+                      value={formData.salary}
+                      onChange={handleInputChange}
+                      placeholder="Amount in USD"
+                      required
+                    />
+                    <Input
+                      label="Join Date"
+                      type="date"
+                      name="joinDate"
+                      value={formData.joinDate}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-2">
+                      Bio
+                    </label>
+                    <textarea
+                      name="bio"
+                      value={formData.bio}
+                      onChange={handleInputChange}
+                      rows="4"
+                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+                      placeholder="Brief description about the trainer..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex justify-end gap-4 pt-4 border-t border-gray-800">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowAddModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary">
+                  Add Trainer
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Trainers;
