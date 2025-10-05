@@ -1,0 +1,11 @@
+Flask
+Flask-SQLAlchemy
+Flask-CORS
+sqlalchemy 
+Flask-JWT-Extended
+psycopg2-binary
+requests
+bcrypt
+python-dotenv
+email-validator
+Werkzeug

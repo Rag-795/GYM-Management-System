@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Phone, ArrowRight, Dumbbell, Github, Calendar } from 'lucide-react';
+import { Mail, Lock, User, Phone, ArrowRight, Dumbbell, Calendar, Briefcase } from 'lucide-react';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { Alert } from '../../components/Alert';
-import { SocialButton } from '../../components/SocialButton';
 import api from '../../services/api';
 
 const SignupPage = () => {
@@ -18,13 +17,23 @@ const SignupPage = () => {
     dateOfBirth: '',
     password: '',
     confirmPassword: '',
+    role: 'MEMBER', // Default role
     agreeToTerms: false,
-    marketingEmails: false
+    marketingEmails: false,
+    // Trainer-specific fields
+    specialties: [],
+    experience: '',
+    bio: ''
   });
   const [errors, setErrors] = useState({});
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const trainerSpecialties = [
+    'Weight Training', 'Cardio', 'HIIT', 'CrossFit', 'Yoga', 
+    'Pilates', 'Boxing', 'MMA', 'Dance Fitness', 'Zumba',
+    'Strength Training', 'Nutrition', 'Rehabilitation'
+  ];
 
   // Password strength helper (computed on render)
   const passwordStrength = () => {
@@ -39,7 +48,7 @@ const SignupPage = () => {
     if (/[^a-zA-Z\d]/.test(password)) strength++;
 
     const strengthLevels = ['Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
-    const strengthColors = ['#ef4444', '#f59e0b', '#eab308', '#84cc16', '#22c55e']; // red, orange, yellow, lime, green
+    const strengthColors = ['#ef4444', '#f59e0b', '#eab308', '#84cc16', '#22c55e'];
 
     return {
       level: strengthLevels[strength - 1] || 'Weak',
@@ -61,6 +70,15 @@ const SignupPage = () => {
     }
   };
 
+  const handleSpecialtyToggle = (specialty) => {
+    setFormData(prev => ({
+      ...prev,
+      specialties: prev.specialties.includes(specialty)
+        ? prev.specialties.filter(s => s !== specialty)
+        : [...prev.specialties, specialty]
+    }));
+  };
+
   const validateStep1 = () => {
     const newErrors = {};
     
@@ -80,8 +98,12 @@ const SignupPage = () => {
     
     if (!formData.phone) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^\+?[\d\s-()]+$/.test(formData.phone)) {
-      newErrors.phone = 'Phone number is invalid';
+    } else if (!/^\d{10}$/.test(formData.phone.replace(/[\s-()]/g, ''))) { 
+      newErrors.phone = 'Phone number must be exactly 10 digits';
+    }
+
+    if (!formData.role) {
+      newErrors.role = 'Please select a role';
     }
     
     return newErrors;
@@ -109,6 +131,16 @@ const SignupPage = () => {
     
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    // Trainer-specific validation
+    if (formData.role === 'TRAINER') {
+      if (formData.specialties.length === 0) {
+        newErrors.specialties = 'Please select at least one specialty';
+      }
+      if (!formData.experience) {
+        newErrors.experience = 'Experience is required for trainers';
+      }
     }
     
     if (!formData.agreeToTerms) {
@@ -140,19 +172,29 @@ const SignupPage = () => {
     setAlert(null);
 
     try {
-      const response = await api.signup({
+      const signupData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         phone: formData.phone,
         dateOfBirth: formData.dateOfBirth,
         password: formData.password,
+        role: formData.role,
         marketingEmails: formData.marketingEmails
-      });
+      };
+
+      // Add trainer-specific data if role is TRAINER
+      if (formData.role === 'TRAINER') {
+        signupData.specialties = formData.specialties;
+        signupData.experience = formData.experience;
+        signupData.bio = formData.bio;
+      }
+
+      const response = await api.signup(signupData);
 
       setAlert({ 
         type: 'success', 
-        message: 'Account created successfully! Please check your email to verify your account.' 
+        message: 'Account created successfully! Please login to your account.' 
       });
       
       setTimeout(() => {
@@ -166,10 +208,6 @@ const SignupPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSocialSignup = async (provider) => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/auth/oauth/${provider}`;
   };
 
   return (
@@ -191,7 +229,10 @@ const SignupPage = () => {
               Join The FitHub Community
             </h1>
             <p className="text-xl text-white/90 mb-8">
-              Get access to exclusive features and start your transformation
+              {formData.role === 'TRAINER' 
+                ? 'Help others achieve their fitness goals as a trainer'
+                : 'Get access to exclusive features and start your transformation'
+              }
             </p>
             
             <div className="space-y-4 text-left max-w-md mx-auto">
@@ -199,19 +240,34 @@ const SignupPage = () => {
                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-1">
                   <span className="text-black text-xs font-bold">✓</span>
                 </div>
-                <p className="text-white/90">Personalized workout plans tailored to your goals</p>
+                <p className="text-white/90">
+                  {formData.role === 'TRAINER' 
+                    ? 'Manage your clients and training schedules'
+                    : 'Personalized workout plans tailored to your goals'
+                  }
+                </p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-1">
                   <span className="text-black text-xs font-bold">✓</span>
                 </div>
-                <p className="text-white/90">Track your progress with advanced analytics</p>
+                <p className="text-white/90">
+                  {formData.role === 'TRAINER' 
+                    ? 'Track client progress and performance metrics'
+                    : 'Track your progress with advanced analytics'
+                  }
+                </p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-1">
                   <span className="text-black text-xs font-bold">✓</span>
                 </div>
-                <p className="text-white/90">Connect with trainers and fellow fitness enthusiasts</p>
+                <p className="text-white/90">
+                  {formData.role === 'TRAINER' 
+                    ? 'Build your professional trainer profile'
+                    : 'Connect with trainers and fellow fitness enthusiasts'
+                  }
+                </p>
               </div>
             </div>
           </div>
@@ -222,7 +278,7 @@ const SignupPage = () => {
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full">
           {/* Logo */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 mt-4">
             <Link to="/" className="inline-flex items-center justify-center space-x-2">
               <Dumbbell className="h-10 w-10 text-yellow-400" />
               <span className="text-3xl font-black text-yellow-400">FitHub</span>
@@ -231,7 +287,7 @@ const SignupPage = () => {
               Create Your Account
             </h2>
             <p className="mt-2 text-gray-400">
-              {step === 1 ? 'Enter your personal information' : 'Set up your password'}
+              {step === 1 ? 'Enter your personal information' : 'Complete your profile'}
             </p>
           </div>
 
@@ -308,12 +364,62 @@ const SignupPage = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="+91 9876543210"
                   icon={Phone}
                   error={errors.phone}
                   required
                   autoComplete="tel"
                 />
+
+                {/* Role Selection */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    I want to join as <span className="text-yellow-400">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                      formData.role === 'MEMBER' 
+                        ? 'border-yellow-400 bg-yellow-400/10' 
+                        : 'border-gray-700 hover:border-gray-600'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="role"
+                        value="MEMBER"
+                        checked={formData.role === 'MEMBER'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="text-center">
+                        <User className="h-8 w-8 mx-auto mb-2 text-yellow-400" />
+                        <div className="text-white font-medium">Member</div>
+                        <div className="text-gray-400 text-sm">Start your fitness journey</div>
+                      </div>
+                    </label>
+                    <label className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                      formData.role === 'TRAINER' 
+                        ? 'border-yellow-400 bg-yellow-400/10' 
+                        : 'border-gray-700 hover:border-gray-600'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="role"
+                        value="TRAINER"
+                        checked={formData.role === 'TRAINER'}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className="text-center">
+                        <Briefcase className="h-8 w-8 mx-auto mb-2 text-yellow-400" />
+                        <div className="text-white font-medium">Trainer</div>
+                        <div className="text-gray-400 text-sm">Help others achieve goals</div>
+                      </div>
+                    </label>
+                  </div>
+                  {errors.role && (
+                    <p className="text-sm text-red-500 mt-1">{errors.role}</p>
+                  )}
+                </div>
 
                 <Button
                   type="button"
@@ -385,6 +491,59 @@ const SignupPage = () => {
                   autoComplete="new-password"
                 />
 
+                {/* Trainer-specific fields */}
+                {formData.role === 'TRAINER' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        Specialties <span className="text-yellow-400">*</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                        {trainerSpecialties.map(specialty => (
+                          <label key={specialty} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={formData.specialties.includes(specialty)}
+                              onChange={() => handleSpecialtyToggle(specialty)}
+                              className="rounded border-gray-600 text-yellow-400 focus:ring-yellow-400 mr-2"
+                            />
+                            <span className="text-gray-300 text-sm">{specialty}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {errors.specialties && (
+                        <p className="text-sm text-red-500 mt-1">{errors.specialties}</p>
+                      )}
+                    </div>
+
+                    <Input
+                      label="Years of Experience"
+                      type="number"
+                      name="experience"
+                      value={formData.experience}
+                      onChange={handleChange}
+                      placeholder="e.g., 3"
+                      error={errors.experience}
+                      min={0}
+                      required
+                    />
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">
+                        Bio (Optional)
+                      </label>
+                      <textarea
+                        name="bio"
+                        value={formData.bio}
+                        onChange={handleChange}
+                        rows="3"
+                        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+                        placeholder="Tell us about yourself and your training philosophy..."
+                      />
+                    </div>
+                  </>
+                )}
+
                 {/* Terms and Conditions */}
                 <div className="space-y-3">
                   <label className="flex items-start">
@@ -409,19 +568,6 @@ const SignupPage = () => {
                   {errors.agreeToTerms && (
                     <p className="text-sm text-red-500 ml-6">{errors.agreeToTerms}</p>
                   )}
-
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="marketingEmails"
-                      checked={formData.marketingEmails}
-                      onChange={handleChange}
-                      className="h-4 w-4 text-yellow-400 bg-gray-900 border-gray-700 rounded focus:ring-yellow-400 focus:ring-2"
-                    />
-                    <span className="ml-2 text-sm text-gray-400">
-                      Send me tips, trends, and promos (optional)
-                    </span>
-                  </label>
                 </div>
 
                 <div className="flex gap-4">
@@ -447,43 +593,8 @@ const SignupPage = () => {
             )}
           </form>
 
-          {step === 1 && (
-            <>
-              {/* Divider */}
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-700"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-black text-gray-400">Or sign up with</span>
-                </div>
-              </div>
-
-              {/* Social Signup */}
-              <div className="space-y-3">
-                <SocialButton
-                  provider="Google"
-                  icon={() => (
-                    <svg className="h-5 w-5" viewBox="0 0 24 24">
-                      <path fill="#EA4335" d="M5.26620003,9.76452941 C6.19878754,6.93863203 8.85444915,4.90909091 12,4.90909091 C13.6909091,4.90909091 15.2181818,5.50909091 16.4181818,6.49090909 L19.9090909,3 C17.7818182,1.14545455 15.0545455,0 12,0 C7.27006974,0 3.1977497,2.69829785 1.23999023,6.65002441 L5.26620003,9.76452941 Z"/>
-                      <path fill="#34A853" d="M16.0407269,18.0125889 C14.9509167,18.7163016 13.5660892,19.0909091 12,19.0909091 C8.86648613,19.0909091 6.21911939,17.076871 5.27698177,14.2678769 L1.23746264,17.3349879 C3.19279051,21.2936293 7.26500293,24 12,24 C14.9328362,24 17.7353462,22.9573905 19.834192,20.9995801 L16.0407269,18.0125889 Z"/>
-                      <path fill="#FBBC05" d="M19.834192,20.9995801 C22.0291676,18.9520994 23.4545455,15.903663 23.4545455,12 C23.4545455,11.2909091 23.3454545,10.5818182 23.1818182,9.90909091 L12,9.90909091 L12,14.4545455 L18.4363636,14.4545455 C18.1187732,16.013626 17.2662994,17.2212117 16.0407269,18.0125889 L19.834192,20.9995801 Z"/>
-                      <path fill="#4285F4" d="M5.27698177,14.2678769 C5.03832634,13.556323 4.90909091,12.7937589 4.90909091,12 C4.90909091,11.2182781 5.03443647,10.4668121 5.26620003,9.76452941 L1.23999023,6.65002441 C0.43658717,8.26043162 0,10.0753848 0,12 C0,13.9195484 0.444780743,15.7301709 1.23746264,17.3349879 L5.27698177,14.2678769 Z"/>
-                    </svg>
-                  )}
-                  onClick={() => handleSocialSignup('google')}
-                />
-                <SocialButton
-                  provider="GitHub"
-                  icon={Github}
-                  onClick={() => handleSocialSignup('github')}
-                />
-              </div>
-            </>
-          )}
-
           {/* Login Link */}
-          <p className="mt-8 text-center text-gray-400">
+          <p className="mt-4 text-center text-gray-400">
             Already have an account?{' '}
             <Link
               to="/auth/login"

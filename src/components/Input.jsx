@@ -12,7 +12,8 @@ export const Input = ({
   icon: Icon,
   required = false,
   disabled = false,
-  autoComplete
+  autoComplete,
+  ...rest
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === 'password';
@@ -40,6 +41,7 @@ export const Input = ({
           required={required}
           disabled={disabled}
           autoComplete={autoComplete}
+          {...rest}
           className={`
             w-full px-4 py-3 bg-gray-900 border rounded-lg
             text-white placeholder-gray-500
@@ -49,6 +51,7 @@ export const Input = ({
             ${isPassword ? 'pr-11' : ''}
             ${error ? 'border-red-500' : 'border-gray-700 hover:border-yellow-400/50'}
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+            ${type === 'date' ? '[color-scheme:dark]' : ''}
           `}
         />
         {isPassword && (

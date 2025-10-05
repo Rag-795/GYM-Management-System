@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 class ApiService {
   async request(endpoint, options = {}) {
@@ -22,7 +22,9 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Something went wrong');
+        // Try to get error message from response
+        const errorMessage = data.error || data.message || `HTTP ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       return data;
@@ -44,20 +46,6 @@ class ApiService {
     return this.request('/auth/signup', {
       method: 'POST',
       body: JSON.stringify(userData),
-    });
-  }
-
-  async forgotPassword(email) {
-    return this.request('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
-
-  async resetPassword(token, newPassword) {
-    return this.request('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, newPassword }),
     });
   }
 
