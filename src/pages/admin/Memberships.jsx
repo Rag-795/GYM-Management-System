@@ -14,7 +14,6 @@ const Memberships = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddPlanModal, setShowAddPlanModal] = useState(false);
   const [showEditPlanModal, setShowEditPlanModal] = useState(false);
-  const [showViewMembershipModal, setShowViewMembershipModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedMembership, setSelectedMembership] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -427,7 +426,7 @@ const Memberships = () => {
                     Edit Plan
                   </Button>
                   <button className="p-2 text-gray-400 hover:text-red-400 transition-colors">
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 hover:cursor-pointer" />
                   </button>
                 </div>
               </div>
@@ -497,17 +496,10 @@ const Memberships = () => {
                 <tbody>
                   {filteredMemberships.map((membership) => (
                     <tr key={membership.id} className="border-t border-gray-800 hover:bg-gray-800/50">
-                      <td className="p-4">
-                        <div className="flex items-center">
-                          <img 
-                            src={membership.member.avatar} 
-                            alt={membership.member.name}
-                            className="h-10 w-10 rounded-full mr-3"
-                          />
-                          <div>
-                            <p className="font-medium text-white">{membership.member.name}</p>
-                            <p className="text-gray-400 text-sm">{membership.member.email}</p>
-                          </div>
+                      <td className="p-4">                        
+                        <div>
+                          <p className="font-medium text-white">{membership.member.name}</p>
+                          <p className="text-gray-400 text-sm">{membership.member.email}</p>
                         </div>
                       </td>
                       <td className="p-4">
@@ -548,7 +540,7 @@ const Memberships = () => {
                         <p className="text-gray-400 text-xs mt-1">${membership.amount}</p>
                       </td>
                       <td className="p-4">
-                        <div className="flex items-center">
+                        <div className="flex items-center mx-6">
                           {membership.autoRenew ? (
                             <CheckCircle className="h-5 w-5 text-green-400" />
                           ) : (
@@ -558,17 +550,11 @@ const Memberships = () => {
                       </td>
                       <td className="p-4">
                         <div className="flex items-center space-x-2">
-                          <button 
-                            onClick={() => handleViewMembership(membership)}
-                            className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
                           <button className="p-1 text-gray-400 hover:text-yellow-400 transition-colors">
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-4 w-4 cursor-pointer" />
                           </button>
                           <button className="p-1 text-gray-400 hover:text-red-400 transition-colors">
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 cursor-pointer" />
                           </button>
                         </div>
                       </td>
@@ -691,85 +677,6 @@ const Memberships = () => {
                   </Button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* View Membership Modal */}
-      {showViewMembershipModal && selectedMembership && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-800">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">Membership Details</h2>
-                <button
-                  onClick={() => setShowViewMembershipModal(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <div className="flex items-center gap-4 mb-6">
-                <img 
-                  src={selectedMembership.member.avatar} 
-                  alt={selectedMembership.member.name}
-                  className="h-16 w-16 rounded-full"
-                />
-                <div>
-                  <h3 className="text-xl font-bold text-white">{selectedMembership.member.name}</h3>
-                  <p className="text-gray-400">{selectedMembership.member.email}</p>
-                  <p className="text-gray-400">{selectedMembership.member.phone}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-400 mb-3">Membership Information</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-gray-500 text-sm">Plan</p>
-                      <p className="text-white font-medium">{selectedMembership.plan}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">Status</p>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedMembership.status === 'active' ? 'bg-green-400/20 text-green-400' :
-                        selectedMembership.status === 'expiring' ? 'bg-yellow-400/20 text-yellow-400' :
-                        'bg-red-400/20 text-red-400'
-                      }`}>
-                        {selectedMembership.status}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">Amount</p>
-                      <p className="text-white font-medium">${selectedMembership.amount}</p>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-400 mb-3">Timeline</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-gray-500 text-sm">Start Date</p>
-                      <p className="text-white font-medium">{selectedMembership.startDate}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">End Date</p>
-                      <p className="text-white font-medium">{selectedMembership.endDate}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-sm">Auto Renew</p>
-                      <p className="text-white font-medium">
-                        {selectedMembership.autoRenew ? 'Enabled' : 'Disabled'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

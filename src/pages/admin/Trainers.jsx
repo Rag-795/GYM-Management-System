@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, Plus, Filter, Download, Edit, Trash2, Eye, 
   Mail, Phone, Calendar, Award, Clock, Star, Users,
-  X, Upload, FileText, DollarSign, TrendingUp
+  X, Upload, FileText, DollarSign, TrendingUp, Pencil
 } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
@@ -14,6 +14,9 @@ const Trainers = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState(null);
+  const [editingSalary, setEditingSalary] = useState(null); // Stores ID of trainer whose salary is being edited
+  const [newSalary, setNewSalary] = useState(''); // Stores the new salary value
+  const [alert, setAlert] = useState(null); // For success/error messages
 
   // Form state for new trainer
   const [formData, setFormData] = useState({
@@ -39,11 +42,8 @@ const Trainers = () => {
       id: 1,
       firstName: 'Mike',
       lastName: 'Chen',
-      email: 'mike.chen@fithub.com',
       phone: '(555) 111-2222',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
       specialties: ['Weight Training', 'HIIT', 'CrossFit'],
-      certifications: ['ACE Certified', 'CPR', 'First Aid'],
       experience: '5 years',
       rating: 4.9,
       totalClients: 45,
@@ -160,6 +160,72 @@ const Trainers = () => {
     setSelectedTrainer(trainer);
     setShowViewModal(true);
   };
+  
+  // Start editing salary of a trainer
+  const handleEditSalary = (trainer) => {
+    setEditingSalary(trainer.id);
+    setNewSalary(trainer.salary.replace(/[^\d.]/g, '')); // Remove non-numeric characters
+  };
+  
+  // Cancel salary editing
+  const cancelSalaryEdit = () => {
+    setEditingSalary(null);
+    setNewSalary('');
+  };
+  
+  // Save updated salary
+  const saveSalary = async (trainerId) => {
+    try {
+      // Format salary for display
+      const formattedSalary = `$${newSalary}/month`;
+      
+      // API call to update salary in database
+      // This is where you would make an API call to your backend
+      // For example:
+      // const response = await fetch('/api/trainers/${trainerId}/salary', {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ salary: newSalary })
+      // });
+      
+      // For now, let's update the local state
+      const updatedTrainers = trainers.map(trainer => 
+        trainer.id === trainerId 
+          ? { ...trainer, salary: formattedSalary } 
+          : trainer
+      );
+      
+      // In a real application, you would update your state from the API response
+      // setTrainers(updatedTrainers);
+      
+      // Show success message
+      setAlert({
+        type: 'success',
+        message: 'Trainer salary updated successfully!'
+      });
+      
+      // Reset editing state
+      setEditingSalary(null);
+      setNewSalary('');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setAlert(null);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error updating salary:', error);
+      setAlert({
+        type: 'error',
+        message: 'Failed to update salary. Please try again.'
+      });
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setAlert(null);
+      }, 5000);
+    }
+  };
 
   const filteredTrainers = trainers.filter(trainer => {
     const fullName = `${trainer.firstName} ${trainer.lastName}`.toLowerCase();
@@ -172,6 +238,15 @@ const Trainers = () => {
 
   return (
     <div className="space-y-6">
+      {/* Alert for notifications */}
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
+      
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -179,9 +254,6 @@ const Trainers = () => {
           <p className="text-gray-400 mt-1">Total Trainers: {trainers.length} • Active: {trainers.filter(t => t.status === 'active').length}</p>
         </div>
         <div className="flex gap-2 mt-4 sm:mt-0">
-          <Button variant="secondary" icon={Download}>
-            Export
-          </Button>
           <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
             Add Trainer
           </Button>
@@ -267,11 +339,6 @@ const Trainers = () => {
               <option value="contract">Contract</option>
             </select>
           </div>
-          <div className="flex gap-2">
-            <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
-              <Filter className="h-5 w-5" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -282,11 +349,6 @@ const Trainers = () => {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <img 
-                    src={trainer.avatar} 
-                    alt={`${trainer.firstName} ${trainer.lastName}`}
-                    className="h-12 w-12 rounded-full"
-                  />
                   <div>
                     <h3 className="text-white font-semibold">
                       {trainer.firstName} {trainer.lastName}
@@ -327,8 +389,45 @@ const Trainers = () => {
                     <p className="text-white font-medium">{trainer.totalClients}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs">Sessions/Month</p>
-                    <p className="text-white font-medium">{trainer.sessionsThisMonth}</p>
+                    <p className="text-gray-400 text-xs">Salary
+                      {editingSalary !== trainer.id && (
+                        <button 
+                          onClick={() => handleEditSalary(trainer)} 
+                          className="p-1 text-gray-400 hover:text-yellow-400 transition-colors ml-1"
+                        >
+                          <Pencil className="h-3 w-3 hover:cursor-pointer" />
+                        </button>
+                      )}
+                    </p>
+                    {editingSalary === trainer.id ? (
+                      <div className="flex items-center gap-1 mt-1">
+                        <input
+                          type="text"
+                          value={newSalary}
+                          onChange={(e) => setNewSalary(e.target.value)}
+                          className="w-20 px-1 py-0.5 bg-gray-800 border border-yellow-400 rounded text-white text-xs"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => saveSalary(trainer.id)}
+                          className="p-0.5 text-green-400 hover:text-green-300"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        <button 
+                          onClick={cancelSalaryEdit}
+                          className="p-0.5 text-red-400 hover:text-red-300"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-white font-medium">{trainer.salary}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-gray-400 text-xs">Performance</p>
@@ -338,13 +437,7 @@ const Trainers = () => {
               </div>
 
               <div className="flex gap-2 pt-4 border-t border-gray-800">
-                <button 
-                  onClick={() => handleViewTrainer(trainer)}
-                  className="flex-1 px-3 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium"
-                >
-                  View Profile
-                </button>
-                <button className="px-3 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300 transition-colors text-sm font-medium">
+                <button className="flex-1 px-3 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300 transition-colors text-sm font-medium hover:cursor-pointer">
                   Assign Client
                 </button>
               </div>
@@ -364,7 +457,7 @@ const Trainers = () => {
                   onClick={() => setShowAddModal(false)}
                   className="text-gray-400 hover:text-white"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-6 w-6 hover:cursor-pointer" />
                 </button>
               </div>
             </div>
@@ -385,14 +478,6 @@ const Trainers = () => {
                     label="Last Name"
                     name="lastName"
                     value={formData.lastName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <Input
-                    label="Email"
-                    type="email"
-                    name="email"
-                    value={formData.email}
                     onChange={handleInputChange}
                     required
                   />
@@ -455,15 +540,6 @@ const Trainers = () => {
                     </div>
                   </div>
 
-                  <Input
-                    label="Certifications"
-                    name="certifications"
-                    value={formData.certifications}
-                    onChange={handleInputChange}
-                    placeholder="e.g., ACE Certified, CPR, First Aid"
-                    required
-                  />
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       label="Years of Experience"
@@ -471,6 +547,7 @@ const Trainers = () => {
                       name="experience"
                       value={formData.experience}
                       onChange={handleInputChange}
+                      min='0'
                       required
                     />
                     <div className="mb-4">
@@ -494,13 +571,14 @@ const Trainers = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                      label="Monthly Salary"
+                      label="Monthly Salary ₹"
                       type="number"
                       name="salary"
                       value={formData.salary}
                       onChange={handleInputChange}
                       placeholder="Amount in USD"
                       required
+                      min='0'
                     />
                     <Input
                       label="Join Date"
@@ -512,19 +590,6 @@ const Trainers = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-300 mb-2">
-                      Bio
-                    </label>
-                    <textarea
-                      name="bio"
-                      value={formData.bio}
-                      onChange={handleInputChange}
-                      rows="4"
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                      placeholder="Brief description about the trainer..."
-                    />
-                  </div>
                 </div>
               </div>
 

@@ -97,6 +97,10 @@ class Trainer(db.Model):
     specialization = Column(db.String(200))
     experience_years = Column(db.Integer, default=0)
     bio = Column(db.Text)
+    rating = Column(db.Numeric(3, 2), default=0.0)  # Rating from 0.00 to 5.00
+    salary = Column(db.Integer, default=0)  # Monthly salary amount
+    total_clients = Column(db.Integer, default=0)  # Total number of clients
+    availability = Column(db.String(50))  # Availability status (Full-time, Part-time, etc)
     is_active = Column(db.Boolean, default=True)
     created_at = Column(db.TIMESTAMP(timezone=True), default=utc_now)
     updated_at = Column(db.TIMESTAMP(timezone=True), default=utc_now, onupdate=utc_now)
@@ -115,6 +119,10 @@ class Trainer(db.Model):
             'specialization': self.specialization,
             'experience_years': self.experience_years,
             'bio': self.bio,
+            'rating': float(self.rating) if self.rating is not None else 0,
+            'salary': self.salary if self.salary is not None else 0,
+            'total_clients': self.total_clients,
+            'availability': self.availability,
             'is_active': self.is_active,
             'phones': [phone.phone for phone in self.phones] if self.phones else []
         }

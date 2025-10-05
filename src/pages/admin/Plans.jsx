@@ -12,9 +12,6 @@ import { Alert } from '../../components/Alert';
 const Plans = () => {
   const [activeTab, setActiveTab] = useState('workout');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [showAssignModal, setShowAssignModal] = useState(false);
 
   // Sample workout plans data
   const workoutPlans = [
@@ -224,17 +221,11 @@ const Plans = () => {
           <p className="text-gray-400 text-sm">{plan.type}</p>
         </div>
         <div className="flex items-center space-x-2">
-          <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
+          <button className="p-2 hover:cursor-pointer text-gray-400 hover:text-yellow-400 transition-colors">
             <Eye className="h-4 w-4" />
           </button>
-          <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
-            <Edit className="h-4 w-4" />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
+          <button className="p-2 hover:cursor-pointer text-gray-400 hover:text-yellow-400 transition-colors">
             <Copy className="h-4 w-4" />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-red-400 transition-colors">
-            <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -303,19 +294,6 @@ const Plans = () => {
           </div>
         </div>
       </div>
-
-      <div className="mt-4 flex gap-2">
-        <Button 
-          variant="secondary" 
-          fullWidth
-          onClick={() => {
-            setSelectedPlan(plan);
-            setShowAssignModal(true);
-          }}
-        >
-          Assign to Members
-        </Button>
-      </div>
     </div>
   );
 
@@ -327,21 +305,13 @@ const Plans = () => {
           <h1 className="text-3xl font-black text-white">Workout & Diet Plans</h1>
           <p className="text-gray-400 mt-1">Manage fitness and nutrition programs</p>
         </div>
-        <Button 
-          variant="primary" 
-          icon={Plus}
-          onClick={() => setShowCreateModal(true)}
-          className="mt-4 sm:mt-0"
-        >
-          Create Plan
-        </Button>
       </div>
 
       {/* Tabs */}
       <div className="flex space-x-1 bg-gray-900 rounded-lg p-1">
         <button
           onClick={() => setActiveTab('workout')}
-          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all hover:cursor-pointer ${
             activeTab === 'workout' 
               ? 'bg-yellow-400 text-black' 
               : 'text-gray-400 hover:text-white'
@@ -352,7 +322,7 @@ const Plans = () => {
         </button>
         <button
           onClick={() => setActiveTab('diet')}
-          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all hover:cursor-pointer ${
             activeTab === 'diet' 
               ? 'bg-yellow-400 text-black' 
               : 'text-gray-400 hover:text-white'
@@ -402,14 +372,6 @@ const Plans = () => {
               <option value="advanced">Advanced</option>
             </select>
           </div>
-          <div className="flex gap-2">
-            <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
-              <Filter className="h-5 w-5" />
-            </button>
-            <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
-              <Download className="h-5 w-5" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -420,185 +382,7 @@ const Plans = () => {
         ))}
       </div>
 
-      {/* Create/Edit Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-white mb-6">
-              Create New {activeTab === 'workout' ? 'Workout' : 'Diet'} Plan
-            </h2>
-            
-            <form className="space-y-4">
-              <Input
-                label="Plan Name"
-                placeholder="Enter plan name"
-                required
-              />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Type
-                  </label>
-                  <select className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400">
-                    {activeTab === 'workout' ? (
-                      <>
-                        <option>Strength Training</option>
-                        <option>Cardio</option>
-                        <option>HIIT</option>
-                        <option>Flexibility</option>
-                      </>
-                    ) : (
-                      <>
-                        <option>Weight Loss</option>
-                        <option>Muscle Gain</option>
-                        <option>Maintenance</option>
-                        <option>Special Diet</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-2">
-                    Difficulty Level
-                  </label>
-                  <select className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400">
-                    <option>Beginner</option>
-                    <option>Intermediate</option>
-                    <option>Advanced</option>
-                    <option>All Levels</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                  rows="3"
-                  placeholder="Enter plan description"
-                ></textarea>
-              </div>
-
-              {activeTab === 'workout' ? (
-                <>
-                  <Input
-                    label="Duration (minutes)"
-                    type="number"
-                    placeholder="45"
-                  />
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-300 mb-2">
-                      Required Equipment
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                      placeholder="e.g., Dumbbells, Mat, Resistance Bands"
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="Daily Calories"
-                      type="number"
-                      placeholder="2000"
-                    />
-                    <Input
-                      label="Protein (g)"
-                      type="number"
-                      placeholder="150"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="Carbs (g)"
-                      type="number"
-                      placeholder="250"
-                    />
-                    <Input
-                      label="Fats (g)"
-                      type="number"
-                      placeholder="70"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="flex justify-end space-x-4 pt-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowCreateModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button variant="primary">
-                  Create Plan
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Assign Modal */}
-      {showAssignModal && selectedPlan && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl p-6 max-w-lg w-full">
-            <h2 className="text-2xl font-bold text-white mb-4">
-              Assign Plan: {selectedPlan.name}
-            </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Select Members
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search members..."
-                    className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
-                  />
-                </div>
-              </div>
-              
-              <div className="max-h-60 overflow-y-auto space-y-2">
-                {['John Doe', 'Sarah Smith', 'Mike Johnson', 'Emily Brown'].map((member, idx) => (
-                  <label key={idx} className="flex items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-600 text-yellow-400 focus:ring-yellow-400"
-                    />
-                    <span className="ml-3 text-white">{member}</span>
-                  </label>
-                ))}
-              </div>
-
-              <div className="flex justify-end space-x-4 pt-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowAssignModal(false);
-                    setSelectedPlan(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button variant="primary">
-                  Assign to Selected
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };

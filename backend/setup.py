@@ -107,6 +107,10 @@ class Trainer(Base):
     specialization = Column(String(200))
     experience_years = Column(Integer, default=0)
     bio = Column(Text)
+    rating = Column(Numeric(3, 2), default=0.0)  # Rating from 0.00 to 5.00
+    salary = Column(Integer, default=0)  # Monthly salary amount
+    total_clients = Column(Integer, default=0)  # Total number of clients
+    availability = Column(String(50))  # Availability status (Full-time, Part-time, etc)
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), default=utc_now)
     updated_at = Column(TIMESTAMP(timezone=True), default=utc_now, onupdate=utc_now)

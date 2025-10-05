@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, Plus, Filter, Download, Edit, Trash2, Eye, 
   Mail, Phone, Calendar, MapPin, MoreVertical, UserPlus,
-  FileText, CreditCard, Activity, Award, X, Upload, Camera
+  FileText, CreditCard, Activity, Award, X, Upload, Camera, User2, AlertCircle
 } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
@@ -51,7 +51,6 @@ const Members = () => {
       plan: 'Premium',
       status: 'active',
       lastCheckIn: '2024-01-20 09:30 AM',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
       address: '123 Main St, City, 12345',
       age: 28,
       weight: '75 kg',
@@ -61,7 +60,6 @@ const Members = () => {
       nextPayment: '2024-02-15',
       attendance: '92%',
       gender: 'Male',
-      emergencyContact: 'Jane Doe',
       emergencyPhone: '(555) 987-6543'
     },
     {
@@ -187,9 +185,6 @@ const Members = () => {
           <p className="text-gray-400 mt-1">Total Members: {members.length}</p>
         </div>
         <div className="flex gap-2 mt-4 sm:mt-0">
-          <Button variant="secondary" icon={Download}>
-            Export
-          </Button>
           <Button variant="primary" icon={UserPlus} onClick={() => setShowAddModal(true)}>
             Add Member
           </Button>
@@ -275,11 +270,6 @@ const Members = () => {
               <option value="elite">Elite</option>
             </select>
           </div>
-          <div className="flex gap-2">
-            <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
-              <Filter className="h-5 w-5" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -289,12 +279,6 @@ const Members = () => {
           <table className="w-full">
             <thead className="bg-gray-800">
               <tr className="text-left text-gray-400 text-sm">
-                <th className="p-4">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-600 text-yellow-400 focus:ring-yellow-400"
-                  />
-                </th>
                 <th className="p-4">Member</th>
                 <th className="p-4">Contact</th>
                 <th className="p-4">Membership</th>
@@ -308,18 +292,7 @@ const Members = () => {
               {filteredMembers.map((member) => (
                 <tr key={member.id} className="border-t border-gray-800 hover:bg-gray-800/50">
                   <td className="p-4">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-600 text-yellow-400 focus:ring-yellow-400"
-                    />
-                  </td>
-                  <td className="p-4">
                     <div className="flex items-center space-x-3">
-                      <img 
-                        src={member.avatar} 
-                        alt={`${member.firstName} ${member.lastName}`}
-                        className="h-10 w-10 rounded-full"
-                      />
                       <div>
                         <p className="text-white font-medium">{member.firstName} {member.lastName}</p>
                         <p className="text-gray-400 text-sm">ID: #{member.id.toString().padStart(4, '0')}</p>
@@ -370,16 +343,16 @@ const Members = () => {
                         onClick={() => handleViewMember(member)}
                         className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 hover:cursor-pointer" />
                       </button>
                       <button className="p-1 text-gray-400 hover:text-yellow-400 transition-colors">
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 hover:cursor-pointer" />
                       </button>
                       <button 
                         onClick={() => handleDeleteMember(member.id)}
                         className="p-1 text-gray-400 hover:text-red-400 transition-colors"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 hover:cursor-pointer" />
                       </button>
                     </div>
                   </td>
@@ -419,7 +392,7 @@ const Members = () => {
                   onClick={() => setShowAddModal(false)}
                   className="text-gray-400 hover:text-white"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-6 w-6 hover:cursor-pointer" />
                 </button>
               </div>
             </div>
@@ -659,118 +632,94 @@ const Members = () => {
       {/* View Member Modal */}
       {showViewModal && selectedMember && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-800">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">Member Details</h2>
-                <button
-                  onClick={() => setShowViewModal(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
+          <div className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Quick Overview</h2>
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="text-gray-400 hover:text-white"
+                aria-label="Close">
+                <X className="h-6 w-6 hover:cursor-pointer" />
+              </button>
             </div>
 
-            <div className="p-6">
-              {/* Member Header */}
-              <div className="flex items-center gap-6 mb-6">
-                <img 
-                  src={selectedMember.avatar} 
-                  alt={`${selectedMember.firstName} ${selectedMember.lastName}`}
-                  className="h-24 w-24 rounded-full"
-                />
-                <div>
-                  <h3 className="text-2xl font-bold text-white">
-                    {selectedMember.firstName} {selectedMember.lastName}
-                  </h3>
-                  <p className="text-gray-400">Member ID: #{selectedMember.id.toString().padStart(4, '0')}</p>
-                  <div className="flex gap-2 mt-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      selectedMember.status === 'active' ? 'bg-green-400/20 text-green-400' :
-                      'bg-red-400/20 text-red-400'
-                    }`}>
-                      {selectedMember.status}
-                    </span>
-                    <span className="px-3 py-1 bg-yellow-400/20 text-yellow-400 rounded-full text-sm font-medium">
-                      {selectedMember.plan}
-                    </span>
+            {/* Only info NOT shown in the table (no name/ID, email, phone, plan, trainer, last check-in, status) */}
+            <div className="p-6 space-y-6">
+              {/* Profile */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-800/40 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">Profile</h4>
+                  <div className="space-y-3 text-gray-200">
+                    <div className="flex items-center">
+                      <User2 className="h-4 w-4 mr-3 text-gray-500" />
+                      <div className="flex-1 flex justify-between">
+                        <span className="text-gray-400">Age / Gender</span>
+                        <span className="font-medium">
+                          {selectedMember.age ? `${selectedMember.age} yrs` : '—'}
+                          {selectedMember.gender ? ` • ${selectedMember.gender}` : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 mr-3 text-gray-500" />
+                      <div className="flex-1 flex justify-between">
+                        <span className="text-gray-400">Member Since</span>
+                        <span className="font-medium">
+                          {selectedMember.joinDate}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Address & Emergency */}
+                <div className="bg-gray-800/40 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">Emergency & Address</h4>
+                  <div className="space-y-4 text-gray-200">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-3 text-gray-500" />
+                      <div className="w-full grid grid-cols-[max-content,1fr] items-start gap-3">
+                        <span className="text-gray-400">Emergency Phone</span>
+                        <span className="font-medium break-words">
+                          {selectedMember.emergencyPhone || '—'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <MapPin className="h-4 w-4 mr-3 text-gray-500" />
+                      <div className="w-full grid grid-cols-[max-content,1fr] items-start gap-3">
+                        <span className="text-gray-400">Address</span>
+                        <span className="font-medium break-words">
+                          {selectedMember.address || '—'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="border-b border-gray-800 mb-6">
-                <div className="flex gap-6">
-                  {['overview', 'health', 'payments', 'attendance'].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`pb-3 px-1 capitalize font-medium transition-colors ${
-                        activeTab === tab
-                          ? 'text-yellow-400 border-b-2 border-yellow-400'
-                          : 'text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
+              {/* Compact health snapshot */}
+              <div className="bg-gray-800/40 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-300 mb-3">Health Snapshot</h4>
+                <div className="grid grid-cols-3 gap-4 text-white">
+                  <div>
+                    <p className="text-gray-500 text-sm">Weight</p>
+                    <p className="font-semibold">{selectedMember.weight || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-sm">Height</p>
+                    <p className="font-semibold">{selectedMember.height || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-sm">BMI</p>
+                    <p className="font-semibold">
+                      {typeof selectedMember.bmi === 'number'
+                        ? selectedMember.bmi.toFixed(1)
+                        : selectedMember.bmi || '—'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              {/* Tab Content */}
-              <div className="space-y-6">
-                {activeTab === 'overview' && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-400 mb-3">Contact Information</h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center text-gray-300">
-                            <Mail className="h-4 w-4 mr-3 text-gray-500" />
-                            {selectedMember.email}
-                          </div>
-                          <div className="flex items-center text-gray-300">
-                            <Phone className="h-4 w-4 mr-3 text-gray-500" />
-                            {selectedMember.phone}
-                          </div>
-                          <div className="flex items-center text-gray-300">
-                            <MapPin className="h-4 w-4 mr-3 text-gray-500" />
-                            {selectedMember.address}
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-400 mb-3">Emergency Contact</h4>
-                        <div className="space-y-2">
-                          <p className="text-gray-300">{selectedMember.emergencyContact}</p>
-                          <p className="text-gray-300">{selectedMember.emergencyPhone}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-400 mb-3">Membership Information</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                          <p className="text-gray-500 text-sm">Join Date</p>
-                          <p className="text-white font-medium">{selectedMember.joinDate}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-sm">Next Payment</p>
-                          <p className="text-white font-medium">{selectedMember.nextPayment}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-sm">Trainer</p>
-                          <p className="text-white font-medium">{selectedMember.trainer}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-500 text-sm">Attendance Rate</p>
-                          <p className="text-white font-medium">{selectedMember.attendance}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
           </div>

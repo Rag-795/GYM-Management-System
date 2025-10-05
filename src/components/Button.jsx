@@ -28,7 +28,7 @@ export const Button = ({
         ${variants[variant]}
         px-6 py-3 rounded-lg font-bold
         transition-all duration-200 transform
-        hover:scale-105 active:scale-95
+        hover:scale-105 active:scale-95 cursor-pointer
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black
         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
         ${fullWidth ? 'w-full' : ''}
