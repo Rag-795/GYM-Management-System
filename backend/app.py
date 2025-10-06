@@ -3,6 +3,12 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from models import db, Role, User, Trainer, Member, MemberPhone, TrainerPhone
 from auth_routes import auth_bp
+from trainer_routes import trainer_bp
+from member_routes import member_bp
+from membership_routes import membership_bp
+from equipment_routes import equipment_bp
+from attendance_routes import attendance_bp
+from payment_routes import payment_bp
 from config import config
 import os
 from datetime import datetime, timezone
@@ -23,6 +29,12 @@ def create_app(config_name=None):
     
     # Register blueprints
     app.register_blueprint(auth_bp)
+    app.register_blueprint(trainer_bp)
+    app.register_blueprint(member_bp)
+    app.register_blueprint(membership_bp)
+    app.register_blueprint(equipment_bp)
+    app.register_blueprint(attendance_bp)
+    app.register_blueprint(payment_bp)
     
     # JWT error handlers
     @jwt.expired_token_loader

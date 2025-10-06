@@ -1,21 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Plus, Filter, Download, Edit, Trash2, Eye, 
   Mail, Phone, Calendar, MapPin, MoreVertical, UserPlus,
-  FileText, CreditCard, Activity, Award, X, Upload, Camera, User2, AlertCircle
+  FileText, CreditCard, Activity, Award, X, Upload, Camera, User2, AlertCircle,
+  Loader2, RefreshCw
 } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Alert } from '../../components/Alert';
+import AddMemberModal from '../../components/AddMemberModal';
+import EditMemberModal from '../../components/EditMemberModal';
+import ApiService from '../../services/api';
 
 const Members = () => {
+  // State for data
+  const [members, setMembers] = useState([]);
+  const [membershipPlans, setMembershipPlans] = useState([]);
+  const [membershipPlanNames, setMembershipPlanNames] = useState([]);
+  const [trainers, setTrainers] = useState([]);
+  
+  // State for UI
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedMembers, setSelectedMembers] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-  const [activeTab, setActiveTab] = useState('list');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [memberToEdit, setMemberToEdit] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  
+  // Filters state
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    membership_type: ''
+  });
+  
+  // State for loading and pagination
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [avgAttendance, setAvgAttendance] = useState(0);
+  
+  const perPage = 20;
 
   // Form state for new member
   const [formData, setFormData] = useState({
@@ -36,145 +65,314 @@ const Members = () => {
     height: '',
     weight: '',
     medicalConditions: '',
-    goals: ''
+    goals: '',
+    password: 'defaultpass123' // Default password for new members
   });
 
-  // Sample data
-  const members = [
-    {
-      id: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      phone: '(555) 123-4567',
-      joinDate: '2024-01-15',
-      plan: 'Premium',
-      status: 'active',
-      lastCheckIn: '2024-01-20 09:30 AM',
-      address: '123 Main St, City, 12345',
-      age: 28,
-      weight: '75 kg',
-      height: '180 cm',
-      bmi: 23.1,
-      trainer: 'Mike Chen',
-      nextPayment: '2024-02-15',
-      attendance: '92%',
-      gender: 'Male',
-      emergencyPhone: '(555) 987-6543'
-    },
-    {
-      id: 2,
-      firstName: 'Sarah',
-      lastName: 'Smith',
-      email: 'sarah@example.com',
-      phone: '(555) 234-5678',
-      joinDate: '2024-01-14',
-      plan: 'Basic',
-      status: 'active',
-      lastCheckIn: '2024-01-20 06:00 AM',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-      address: '456 Oak Ave, Town, 67890',
-      age: 25,
-      weight: '62 kg',
-      height: '165 cm',
-      bmi: 22.8,
-      trainer: 'Emily Rodriguez',
-      nextPayment: '2024-02-14',
-      attendance: '88%',
-      gender: 'Female',
-      emergencyContact: 'Tom Smith',
-      emergencyPhone: '(555) 876-5432'
-    },
-    {
-      id: 3,
-      firstName: 'Mike',
-      lastName: 'Johnson',
-      email: 'mike@example.com',
-      phone: '(555) 345-6789',
-      joinDate: '2024-01-13',
-      plan: 'Elite',
-      status: 'inactive',
-      lastCheckIn: '2024-01-18 07:45 AM',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-      address: '789 Pine Rd, Village, 11111',
-      age: 32,
-      weight: '85 kg',
-      height: '185 cm',
-      bmi: 24.8,
-      trainer: 'John Smith',
-      nextPayment: 'Overdue',
-      attendance: '76%',
-      gender: 'Male',
-      emergencyContact: 'Lisa Johnson',
-      emergencyPhone: '(555) 765-4321'
+  // Fetch members data
+  const fetchMembers = async (page = 1, search = '', status = 'all') => {
+    try {
+      setLoading(page === 1);
+      setError(null);
+      
+      const params = {
+        page,
+        limit: perPage,
+        ...(search && { search }),
+        ...(status !== 'all' && { status })
+      };
+      
+      const response = await ApiService.getMembers(params);
+      
+      setMembers(response.members || []);
+      setTotalPages(response.pages || 1);
+      setTotalMembers(response.total || 0);
+      setCurrentPage(page);
+      
+    } catch (err) {
+      console.error('Error fetching members:', err);
+      setError(err.message || 'Failed to fetch members');
+    } finally {
+      setLoading(false);
     }
-  ];
-
-  const membershipPlans = [
-    { id: 'basic', name: 'Basic', price: 29 },
-    { id: 'premium', name: 'Premium', price: 59 },
-    { id: 'elite', name: 'Elite', price: 99 }
-  ];
-
-  const trainers = [
-    { id: 1, name: 'Mike Chen' },
-    { id: 2, name: 'Emily Rodriguez' },
-    { id: 3, name: 'John Smith' },
-    { id: 4, name: 'Sarah Johnson' }
-  ];
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddMember = (e) => {
+  // Fetch membership plans
+  const fetchMembershipPlans = async () => {
+    try {
+      // Fetch full membership plan objects (with id, name, price, etc.)
+      const plansResponse = await ApiService.getMembershipPlans();
+      console.log('Full membership plans response:', plansResponse);
+      setMembershipPlans(plansResponse.plans || []);
+      
+      // Fetch plan names for filtering
+      const namesResponse = await ApiService.getMembershipPlanNames();
+      console.log('Membership plan names response:', namesResponse);
+      setMembershipPlanNames(namesResponse.plans || []);
+    } catch (err) {
+      console.error('Error fetching membership plans:', err);
+    }
+  };
+
+  // Fetch trainers
+  const fetchTrainers = async () => {
+    try {
+      const response = await ApiService.getTrainers();
+      setTrainers(response.trainers || []);
+    } catch (err) {
+      console.error('Error fetching trainers:', err);
+    }
+  };
+
+  // Fetch attendance statistics
+  const fetchAttendanceStats = async () => {
+    try {
+      const response = await ApiService.getAttendanceStats();
+      setAvgAttendance(response.average_attendance || 0);
+    } catch (err) {
+      console.error('Error fetching attendance stats:', err);
+      
+      // Fallback calculation in frontend
+      try {
+        // Simple fallback: calculate based on current page data
+        const activeMembers = members.filter(m => m.is_active).length;
+        if (activeMembers > 0) {
+          // Estimate based on members with recent activity (very rough estimate)
+          const estimatedAttendance = Math.min(Math.round(activeMembers * 0.6), 100);
+          setAvgAttendance(estimatedAttendance);
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback calculation failed:', fallbackErr);
+        setAvgAttendance(0);
+      }
+    }
+  };
+
+  // Load data on component mount and when filters change
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      setError('Please login to access this page');
+      return;
+    }
+    
+    fetchMembers(1, searchTerm, filterStatus);
+  }, [searchTerm, filterStatus]);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      setError('Please login to access this page');
+      return;
+    }
+    
+    fetchMembershipPlans();
+    fetchAttendanceStats();
+    // Temporarily disable trainer fetching until we fix the trailing slash issue
+    // fetchTrainers();
+  }, []);
+
+  // Handle add member
+  const handleAddMember = async (e) => {
     e.preventDefault();
-    // API call to add member
-    console.log('Adding member:', formData);
-    setShowAddModal(false);
-    // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      dateOfBirth: '',
-      gender: '',
-      address: '',
-      city: '',
-      zipCode: '',
-      emergencyContact: '',
-      emergencyPhone: '',
-      membershipPlan: '',
-      startDate: '',
-      trainer: '',
-      height: '',
-      weight: '',
-      medicalConditions: '',
-      goals: ''
-    });
-  };
-
-  const handleViewMember = (member) => {
-    setSelectedMember(member);
-    setShowViewModal(true);
-  };
-
-  const handleDeleteMember = (id) => {
-    if (window.confirm('Are you sure you want to delete this member?')) {
-      // API call to delete member
-      console.log('Deleting member:', id);
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Prepare data for API
+      const memberData = {
+        ...formData,
+        // Convert camelCase to API format
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        dateOfBirth: formData.dateOfBirth,
+        emergencyContact: formData.emergencyContact
+      };
+      
+      await ApiService.createMember(memberData);
+      
+      // Reset form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        dateOfBirth: '',
+        gender: '',
+        address: '',
+        city: '',
+        zipCode: '',
+        emergencyContact: '',
+        emergencyPhone: '',
+        membershipPlan: '',
+        startDate: '',
+        trainer: '',
+        height: '',
+        weight: '',
+        medicalConditions: '',
+        goals: '',
+        password: 'defaultpass123'
+      });
+      
+      setShowAddModal(false);
+      
+      // Refresh members list
+      await fetchMembers(currentPage, searchTerm, filterStatus);
+      
+    } catch (err) {
+      console.error('Error adding member:', err);
+      setError(err.message || 'Failed to add member');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredMembers = members.filter(member => {
-    const fullName = `${member.firstName} ${member.lastName}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || member.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
+  // Handle view member
+  const handleViewMember = async (member) => {
+    try {
+      // Fetch detailed member information
+      const response = await ApiService.getMember(member.id);
+      setSelectedMember(response.member);
+      setShowViewModal(true);
+    } catch (err) {
+      console.error('Error fetching member details:', err);
+      setError(err.message || 'Failed to fetch member details');
+    }
+  };
+
+  // Handle edit member
+  const handleEditMember = async (member) => {
+    try {
+      // Fetch detailed member information for editing
+      const response = await ApiService.getMember(member.id);
+      console.log('Edit member response:', response);
+      console.log('Member data for editing:', response.member);
+      console.log('Member phones:', response.member.phones);
+      console.log('Member addresses:', response.member.addresses);
+      console.log('Member physical_metrics:', response.member.physical_metrics);
+      setMemberToEdit(response.member);
+      setShowEditModal(true);
+    } catch (err) {
+      console.error('Error fetching member details for editing:', err);
+      setError(err.message || 'Failed to fetch member details');
+    }
+  };
+
+  // Handle update member
+  const handleUpdateMember = async (updatedData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await ApiService.updateMember(memberToEdit.id, updatedData);
+      
+      setShowEditModal(false);
+      setMemberToEdit(null);
+      
+      // Refresh members list
+      await fetchMembers(currentPage, filters.search, filters.status || 'all');
+      
+    } catch (err) {
+      console.error('Error updating member:', err);
+      setError(err.message || 'Failed to update member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle delete member
+  const handleDeleteMember = async (id) => {
+    if (window.confirm('Are you sure you want to delete this member? This action cannot be undone.')) {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        await ApiService.deleteMember(id);
+        console.log('Member deleted successfully');
+        
+        // Refresh members list
+        await fetchMembers(currentPage, searchTerm, filterStatus);
+        
+      } catch (err) {
+        console.error('Error deleting member:', err);
+        setError(err.message || 'Failed to delete member');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Handle search with debouncing
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
+
+  // Handle status filter change
+  const handleStatusFilterChange = (status) => {
+    setFilterStatus(status);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Handle pagination
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchMembers(page, searchTerm, filterStatus);
+    }
+  };
+
+  // Format member data for display
+  const formatMemberData = (member) => {
+    return {
+      ...member,
+      fullName: member.full_name || `${member.first_name} ${member.last_name}`,
+      joinDate: member.joined_on ? new Date(member.joined_on).toLocaleDateString() : 'N/A',
+      status: member.is_active ? 'active' : 'inactive',
+      phones: member.phones || [],
+      addresses: member.addresses || [],
+      address: member.addresses && member.addresses.length > 0 
+        ? `${member.addresses[0].street_name || ''}, ${member.addresses[0].city_name || ''}, ${member.addresses[0].postal_code || ''}`.replace(/^,\s*|,\s*$/g, '')
+        : 'N/A'
+    };
+  };
+
+  // No need for client-side filtering since API handles it
+  const displayMembers = members.map(formatMemberData);
+
+  // Filter handling functions
+  const handleFilterChange = (key, value) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filtering
+    
+    // Update the old state variables for backward compatibility
+    if (key === 'search') setSearchTerm(value);
+    if (key === 'status') setFilterStatus(value || 'all');
+    
+    // Trigger data fetch with new filters
+    fetchMembers(1, newFilters.search, newFilters.status || 'all');
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      search: '',
+      status: '',
+      membership_type: ''
+    };
+    setFilters(clearedFilters);
+    setSearchTerm('');
+    setFilterStatus('all');
+    setCurrentPage(1);
+    fetchMembers(1, '', 'all');
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchMembers(currentPage, filters.search, filters.status || 'all');
+    setRefreshing(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -182,14 +380,20 @@ const Members = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-black text-white">Members Management</h1>
-          <p className="text-gray-400 mt-1">Total Members: {members.length}</p>
-        </div>
-        <div className="flex gap-2 mt-4 sm:mt-0">
-          <Button variant="primary" icon={UserPlus} onClick={() => setShowAddModal(true)}>
-            Add Member
-          </Button>
+          <p className="text-gray-400 mt-1">
+            {loading ? 'Loading...' : `Total Members: ${totalMembers}`}
+          </p>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert 
+          type="error" 
+          message={error}
+          onClose={() => setError(null)}
+        />
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -197,7 +401,9 @@ const Members = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Active Members</p>
-              <p className="text-2xl font-bold text-white">892</p>
+              <p className="text-2xl font-bold text-white">
+                {members.filter(m => m.is_active).length}
+              </p>
             </div>
             <div className="bg-green-400/20 p-2 rounded">
               <Activity className="h-5 w-5 text-green-400" />
@@ -207,33 +413,25 @@ const Members = () => {
         <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">New This Month</p>
-              <p className="text-2xl font-bold text-white">45</p>
-            </div>
-            <div className="bg-yellow-400/20 p-2 rounded">
-              <UserPlus className="h-5 w-5 text-yellow-400" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Expired</p>
-              <p className="text-2xl font-bold text-white">23</p>
+              <p className="text-gray-400 text-sm">Inactive Members</p>
+              <p className="text-2xl font-bold text-white">
+                {members.filter(m => !m.is_active).length}
+              </p>
             </div>
             <div className="bg-red-400/20 p-2 rounded">
-              <Calendar className="h-5 w-5 text-red-400" />
+              <UserPlus className="h-5 w-5 text-red-400" />
             </div>
           </div>
         </div>
         <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Avg. Attendance</p>
-              <p className="text-2xl font-bold text-white">85%</p>
+              <p className="text-gray-400 text-sm">Avg Attendance</p>
+              <p className="text-2xl font-bold text-white">{avgAttendance}%</p>
+              {console.log('Avg Attendance:', avgAttendance)}
             </div>
-            <div className="bg-blue-400/20 p-2 rounded">
-              <Award className="h-5 w-5 text-blue-400" />
+            <div className="bg-purple-400/20 p-2 rounded">
+              <Award className="h-5 w-5 text-purple-400" />
             </div>
           </div>
         </div>
@@ -248,133 +446,213 @@ const Members = () => {
               <input
                 type="text"
                 placeholder="Search members by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
               />
             </div>
             <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
               className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
             >
-              <option value="all">All Status</option>
+              <option value="">All Status</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
-              <option value="expired">Expired</option>
             </select>
-            <select className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400">
+            <select 
+              value={filters.membership_type}
+              onChange={(e) => handleFilterChange('membership_type', e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+            >
               <option value="">All Plans</option>
-              <option value="basic">Basic</option>
-              <option value="premium">Premium</option>
-              <option value="elite">Elite</option>
+              {membershipPlanNames.map((plan) => (
+                <option key={plan} value={plan}>{plan}</option>
+              ))}
             </select>
+            <button
+              onClick={clearFilters}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg whitespace-nowrap"
+            >
+              Clear Filters
+            </button>
           </div>
         </div>
       </div>
 
       {/* Members Table */}
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-800">
-              <tr className="text-left text-gray-400 text-sm">
-                <th className="p-4">Member</th>
-                <th className="p-4">Contact</th>
-                <th className="p-4">Membership</th>
-                <th className="p-4">Trainer</th>
-                <th className="p-4">Last Check-in</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Actions</th>
+        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+          <thead className="bg-gray-800">
+            <tr className="text-left text-gray-400 text-sm">
+              <th className="p-4">Member</th>
+              <th className="p-4">Contact</th>
+              <th className="p-4">Membership</th>
+              <th className="p-4">Trainer</th>
+              <th className="p-4">Joined Date</th>
+              <th className="p-4">Status</th>
+              <th className="p-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+            <td colSpan="7" className="p-8 text-center text-gray-400">
+              <div className="flex items-center justify-center space-x-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400"></div>
+                <span>Loading members...</span>
+              </div>
+            </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredMembers.map((member) => (
-                <tr key={member.id} className="border-t border-gray-800 hover:bg-gray-800/50">
-                  <td className="p-4">
-                    <div className="flex items-center space-x-3">
-                      <div>
-                        <p className="text-white font-medium">{member.firstName} {member.lastName}</p>
-                        <p className="text-gray-400 text-sm">ID: #{member.id.toString().padStart(4, '0')}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center text-gray-300 text-sm">
-                        <Mail className="h-4 w-4 mr-2 text-gray-500" />
-                        {member.email}
-                      </div>
-                      <div className="flex items-center text-gray-300 text-sm">
-                        <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                        {member.phone}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div>
-                      <span className="px-3 py-1 bg-yellow-400/20 text-yellow-400 rounded-full text-sm font-medium">
-                        {member.plan}
-                      </span>
-                      <p className="text-gray-400 text-xs mt-1">
-                        Expires: {member.nextPayment}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <p className="text-gray-300">{member.trainer}</p>
-                  </td>
-                  <td className="p-4">
-                    <p className="text-gray-300 text-sm">{member.lastCheckIn}</p>
-                    <p className="text-gray-500 text-xs">Attendance: {member.attendance}</p>
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      member.status === 'active' ? 'bg-green-400/20 text-green-400' :
-                      member.status === 'inactive' ? 'bg-red-400/20 text-red-400' :
-                      'bg-yellow-400/20 text-yellow-400'
-                    }`}>
-                      {member.status}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => handleViewMember(member)}
-                        className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
-                      >
-                        <Eye className="h-4 w-4 hover:cursor-pointer" />
-                      </button>
-                      <button className="p-1 text-gray-400 hover:text-yellow-400 transition-colors">
-                        <Edit className="h-4 w-4 hover:cursor-pointer" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteMember(member.id)}
-                        className="p-1 text-gray-400 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4 hover:cursor-pointer" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ) : members.length === 0 ? (
+              <tr>
+            <td colSpan="7" className="p-8 text-center text-gray-400">
+              {filters.search || filters.status || filters.membership_type ? 
+                'No members found matching your filters.' : 
+                'No members found.'
+              }
+            </td>
+              </tr>
+            ) : (
+              members.map((member) => (
+            <tr key={member.id} className="border-t border-gray-800 hover:bg-gray-800/50">
+              <td className="p-4">
+                <div className="flex items-center space-x-3">
+              <div>
+                <p className="text-white font-medium">
+                  {member.full_name || `${member.first_name} ${member.last_name}`}
+                </p>
+                <p className="text-gray-400 text-sm">ID: #{member.id.toString().substring(0, 4)}...</p>
+              </div>
+                </div>
+              </td>
+              <td className="p-4">
+                <div className="space-y-1">
+              <div className="flex items-center text-gray-300 text-sm">
+                <Mail className="h-4 w-4 mr-2 text-gray-500" />
+                {member.email}
+              </div>
+              {member.phones && member.phones.length > 0 && (
+                <div className="flex items-center text-gray-300 text-sm">
+                  <Phone className="h-4 w-4 mr-2 text-gray-500" />
+                  {member.phones[0]}
+                </div>
+              )}
+                </div>
+              </td>
+              <td className="p-4">
+                <div>
+              <span className="px-3 py-1 bg-yellow-400/20 text-yellow-400 rounded-full text-sm font-medium">
+                {member.membership_type || 'Basic'}
+              </span>
+              <p className="text-gray-400 text-xs mt-1">
+                Joined: {member.joined_on ? new Date(member.joined_on).toLocaleDateString() : 'N/A'}
+              </p>
+                </div>
+              </td>
+              <td className="p-4">
+                <p className="text-gray-300">
+              {member.trainer_name || 'Unassigned'}
+                </p>
+              </td>
+              <td className="p-4">
+                <p className="text-gray-300 text-sm">
+              {member.joined_on ? new Date(member.joined_on).toLocaleDateString() : 'N/A'}
+                </p>
+                <p className="text-gray-500 text-xs">
+              {member.days_since_joined ? `${member.days_since_joined} days ago` : ''}
+                </p>
+              </td>
+              <td className="p-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              member.is_active ? 'bg-green-400/20 text-green-400' : 'bg-red-400/20 text-red-400'
+                }`}>
+              {member.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+              <td className="p-4">
+                <div className="flex items-center space-x-2">
+              <button 
+                onClick={() => handleViewMember(member)}
+                className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
+                title="View Member"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => handleEditMember(member)}
+                className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
+                title="Edit Member"
+              >
+                <Edit className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={() => handleDeleteMember(member.id)}
+                className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                title="Delete Member"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+                </div>
+              </td>
+            </tr>
+              ))
+            )}
+          </tbody>
+            </table>
+          </div>
 
-        {/* Pagination */}
+          {/* Pagination */}
         <div className="p-4 border-t border-gray-800 flex items-center justify-between">
           <p className="text-gray-400 text-sm">
-            Showing 1 to {filteredMembers.length} of {members.length} members
+            Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalMembers)} of {totalMembers} members
           </p>
           <div className="flex items-center space-x-2">
-            <button className="px-3 py-1 bg-gray-800 text-gray-400 rounded hover:text-yellow-400 transition-colors">
+            <button 
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || loading}
+              className={`px-3 py-1 rounded transition-colors ${
+                currentPage === 1 || loading 
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed' 
+                  : 'bg-gray-800 text-gray-400 hover:text-yellow-400'
+              }`}
+            >
               Previous
             </button>
-            <button className="px-3 py-1 bg-yellow-400 text-black rounded font-medium">1</button>
-            <button className="px-3 py-1 bg-gray-800 text-gray-400 rounded hover:text-yellow-400 transition-colors">2</button>
-            <button className="px-3 py-1 bg-gray-800 text-gray-400 rounded hover:text-yellow-400 transition-colors">3</button>
-            <button className="px-3 py-1 bg-gray-800 text-gray-400 rounded hover:text-yellow-400 transition-colors">
+            
+            {/* Page numbers */}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+              if (pageNum > totalPages) return null;
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  disabled={loading}
+                  className={`px-3 py-1 rounded font-medium transition-colors ${
+                    pageNum === currentPage
+                      ? 'bg-yellow-400 text-black'
+                      : loading
+                      ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                      : 'bg-gray-800 text-gray-400 hover:text-yellow-400'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            
+            <button 
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages || loading}
+              className={`px-3 py-1 rounded transition-colors ${
+                currentPage === totalPages || loading
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                  : 'bg-gray-800 text-gray-400 hover:text-yellow-400'
+              }`}
+            >
               Next
             </button>
           </div>
@@ -382,252 +660,25 @@ const Members = () => {
       </div>
 
       {/* Add Member Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-800">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">Add New Member</h2>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="h-6 w-6 hover:cursor-pointer" />
-                </button>
-              </div>
-            </div>
+      <AddMemberModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddMember}
+        membershipPlans={membershipPlans}
+        trainers={trainers}
+      />
 
-            <form onSubmit={handleAddMember} className="p-6 space-y-6">
-              {/* Personal Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Personal Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="First Name"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <Input
-                    label="Last Name"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <Input
-                    label="Email"
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <Input
-                    label="Phone"
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <Input
-                    label="Date of Birth"
-                    type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-300 mb-2">
-                      Gender <span className="text-yellow-400">*</span>
-                    </label>
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                      required
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Address Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Address</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <Input
-                      label="Street Address"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                  <Input
-                    label="City"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <Input
-                    label="ZIP Code"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Emergency Contact */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Emergency Contact</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Contact Name"
-                    name="emergencyContact"
-                    value={formData.emergencyContact}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <Input
-                    label="Contact Phone"
-                    type="tel"
-                    name="emergencyPhone"
-                    value={formData.emergencyPhone}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Membership Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Membership Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-300 mb-2">
-                      Membership Plan <span className="text-yellow-400">*</span>
-                    </label>
-                    <select
-                      name="membershipPlan"
-                      value={formData.membershipPlan}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                      required
-                    >
-                      <option value="">Select Plan</option>
-                      {membershipPlans.map(plan => (
-                        <option key={plan.id} value={plan.id}>
-                          {plan.name} - ${plan.price}/month
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <Input
-                    label="Start Date"
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-gray-300 mb-2">
-                      Assign Trainer
-                    </label>
-                    <select
-                      name="trainer"
-                      value={formData.trainer}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                    >
-                      <option value="">No Trainer</option>
-                      {trainers.map(trainer => (
-                        <option key={trainer.id} value={trainer.id}>
-                          {trainer.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Health Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Health Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Height (cm)"
-                    type="number"
-                    name="height"
-                    value={formData.height}
-                    onChange={handleInputChange}
-                  />
-                  <Input
-                    label="Weight (kg)"
-                    type="number"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleInputChange}
-                  />
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-300 mb-2">
-                      Medical Conditions
-                    </label>
-                    <textarea
-                      name="medicalConditions"
-                      value={formData.medicalConditions}
-                      onChange={handleInputChange}
-                      rows="3"
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                      placeholder="Any medical conditions or allergies..."
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-300 mb-2">
-                      Fitness Goals
-                    </label>
-                    <textarea
-                      name="goals"
-                      value={formData.goals}
-                      onChange={handleInputChange}
-                      rows="3"
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                      placeholder="Member's fitness goals..."
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex justify-end gap-4 pt-4 border-t border-gray-800">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary">
-                  Add Member
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Edit Member Modal */}
+      <EditMemberModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setMemberToEdit(null);
+        }}
+        onSubmit={handleUpdateMember}
+        member={memberToEdit}
+        membershipPlans={membershipPlans}
+      />
 
       {/* View Member Modal */}
       {showViewModal && selectedMember && (
@@ -662,11 +713,20 @@ const Members = () => {
                       </div>
                     </div>
                     <div className="flex items-center">
+                      <Phone className="h-4 w-4 mr-3 text-gray-500" />
+                      <div className="flex-1 flex justify-between">
+                        <span className="text-gray-400">Phone</span>
+                        <span className="font-medium">
+                          {selectedMember.phones && selectedMember.phones.length > 0 ? selectedMember.phones[0] : '—'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-3 text-gray-500" />
                       <div className="flex-1 flex justify-between">
                         <span className="text-gray-400">Member Since</span>
                         <span className="font-medium">
-                          {selectedMember.joinDate}
+                          {selectedMember.joined_on ? new Date(selectedMember.joined_on).toLocaleDateString() : '—'}
                         </span>
                       </div>
                     </div>
@@ -682,7 +742,7 @@ const Members = () => {
                       <div className="w-full grid grid-cols-[max-content,1fr] items-start gap-3">
                         <span className="text-gray-400">Emergency Phone</span>
                         <span className="font-medium break-words">
-                          {selectedMember.emergencyPhone || '—'}
+                          {selectedMember.emergency_contact || '—'}
                         </span>
                       </div>
                     </div>
@@ -691,7 +751,9 @@ const Members = () => {
                       <div className="w-full grid grid-cols-[max-content,1fr] items-start gap-3">
                         <span className="text-gray-400">Address</span>
                         <span className="font-medium break-words">
-                          {selectedMember.address || '—'}
+                          {selectedMember.addresses && selectedMember.addresses.length > 0 
+                            ? `${selectedMember.addresses[0].street_name || ''}, ${selectedMember.addresses[0].city_name || ''}, ${selectedMember.addresses[0].postal_code || ''}`.replace(/^,\s*|,\s*$/g, '') || '—'
+                            : '—'}
                         </span>
                       </div>
                     </div>
@@ -705,18 +767,26 @@ const Members = () => {
                 <div className="grid grid-cols-3 gap-4 text-white">
                   <div>
                     <p className="text-gray-500 text-sm">Weight</p>
-                    <p className="font-semibold">{selectedMember.weight || '—'}</p>
+                    <p className="font-semibold">
+                      {selectedMember.physical_metrics && selectedMember.physical_metrics.length > 0 && selectedMember.physical_metrics[0].weight_kg
+                        ? `${selectedMember.physical_metrics[0].weight_kg} kg`
+                        : '—'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">Height</p>
-                    <p className="font-semibold">{selectedMember.height || '—'}</p>
+                    <p className="font-semibold">
+                      {selectedMember.physical_metrics && selectedMember.physical_metrics.length > 0 && selectedMember.physical_metrics[0].height_cm
+                        ? `${selectedMember.physical_metrics[0].height_cm} cm`
+                        : '—'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">BMI</p>
                     <p className="font-semibold">
-                      {typeof selectedMember.bmi === 'number'
-                        ? selectedMember.bmi.toFixed(1)
-                        : selectedMember.bmi || '—'}
+                      {selectedMember.physical_metrics && selectedMember.physical_metrics.length > 0 && selectedMember.physical_metrics[0].bmi
+                        ? selectedMember.physical_metrics[0].bmi.toFixed(1)
+                        : '—'}
                     </p>
                   </div>
                 </div>

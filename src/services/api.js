@@ -68,6 +68,265 @@ class ApiService {
       method: 'POST',
     });
   }
+
+  // Member endpoints
+  async getMembers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/members/?${queryString}` : '/api/members/';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async getMember(memberId) {
+    return this.request(`/api/members/${memberId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createMember(memberData) {
+    return this.request('/api/members/', {
+      method: 'POST',
+      body: JSON.stringify(memberData),
+    });
+  }
+
+  async updateMember(memberId, memberData) {
+    return this.request(`/api/members/${memberId}`, {
+      method: 'PUT',
+      body: JSON.stringify(memberData),
+    });
+  }
+
+  async deleteMember(memberId) {
+    return this.request(`/api/members/${memberId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async addPhysicalMetrics(memberId, metrics) {
+    return this.request(`/api/members/${memberId}/metrics`, {
+      method: 'POST',
+      body: JSON.stringify(metrics),
+    });
+  }
+
+  async getMembershipPlanNames() {
+    return this.request('/api/members/membership-plans', {
+      method: 'GET',
+    });
+  }
+
+  async getAttendanceStats() {
+    return this.request('/api/attendance/overall-stats', {
+      method: 'GET',
+    });
+  }
+
+  // Trainer endpoints
+  async getTrainers() {
+    return this.request('/api/trainers/', {
+      method: 'GET',
+    });
+  }
+
+  async updateTrainerSalary(trainerId, salary) {
+    return this.request(`/api/trainers/${trainerId}/salary`, {
+      method: 'PUT',
+      body: JSON.stringify({ salary }),
+    });
+  }
+
+  // Membership Plan endpoints
+  async getMembershipPlans() {
+    return this.request('/api/memberships/plans', {
+      method: 'GET',
+    });
+  }
+
+  async createMembershipPlan(planData) {
+    return this.request('/api/memberships/plans', {
+      method: 'POST',
+      body: JSON.stringify(planData),
+    });
+  }
+
+  async updateMembershipPlan(planId, planData) {
+    return this.request(`/api/memberships/plans/${planId}`, {
+      method: 'PUT',
+      body: JSON.stringify(planData),
+    });
+  }
+
+  async deleteMembershipPlan(planId) {
+    return this.request(`/api/memberships/plans/${planId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Membership endpoints
+  async getMemberships(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/memberships?${queryString}` : '/api/memberships';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async createMembership(membershipData) {
+    return this.request('/api/memberships', {
+      method: 'POST',
+      body: JSON.stringify(membershipData),
+    });
+  }
+
+  async updateMembership(membershipId, membershipData) {
+    return this.request(`/api/memberships/${membershipId}`, {
+      method: 'PUT',
+      body: JSON.stringify(membershipData),
+    });
+  }
+
+  async getMembershipStats() {
+    return this.request('/api/memberships/stats', {
+      method: 'GET',
+    });
+  }
+
+  // Equipment endpoints
+  async getEquipment(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/equipment?${queryString}` : '/api/equipment';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async getEquipmentDetails(equipmentId) {
+    return this.request(`/api/equipment/${equipmentId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createEquipment(equipmentData) {
+    return this.request('/api/equipment', {
+      method: 'POST',
+      body: JSON.stringify(equipmentData),
+    });
+  }
+
+  async updateEquipment(equipmentId, equipmentData) {
+    return this.request(`/api/equipment/${equipmentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(equipmentData),
+    });
+  }
+
+  async deleteEquipment(equipmentId) {
+    return this.request(`/api/equipment/${equipmentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async recordMaintenance(equipmentId, maintenanceData) {
+    return this.request(`/api/equipment/${equipmentId}/maintenance`, {
+      method: 'POST',
+      body: JSON.stringify(maintenanceData),
+    });
+  }
+
+  async getEquipmentCategories() {
+    return this.request('/api/equipment/categories', {
+      method: 'GET',
+    });
+  }
+
+  async getEquipmentStats() {
+    return this.request('/api/equipment/stats', {
+      method: 'GET',
+    });
+  }
+
+  // Attendance endpoints
+  async getAttendanceRecords(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/attendance?${queryString}` : '/api/attendance';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async checkIn(checkInData) {
+    return this.request('/api/attendance/check-in', {
+      method: 'POST',
+      body: JSON.stringify(checkInData),
+    });
+  }
+
+  async checkOut(checkOutData) {
+    return this.request('/api/attendance/check-out', {
+      method: 'POST',
+      body: JSON.stringify(checkOutData),
+    });
+  }
+
+  async getCurrentAttendance() {
+    return this.request('/api/attendance/current', {
+      method: 'GET',
+    });
+  }
+
+  async getAttendanceStats(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/attendance/stats?${queryString}` : '/api/attendance/stats';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async getAttendanceReport(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/attendance/report?${queryString}` : '/api/attendance/report';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  // Payment endpoints
+  async getPayments(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/payments?${queryString}` : '/api/payments';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async createPayment(paymentData) {
+    return this.request('/api/payments', {
+      method: 'POST',
+      body: JSON.stringify(paymentData),
+    });
+  }
+
+  async getPaymentDetails(paymentId) {
+    return this.request(`/api/payments/${paymentId}`, {
+      method: 'GET',
+    });
+  }
+
+  async getPaymentStats(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/payments/stats?${queryString}` : '/api/payments/stats';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async getPaymentModes() {
+    return this.request('/api/payments/modes', {
+      method: 'GET',
+    });
+  }
 }
 
 export default new ApiService();

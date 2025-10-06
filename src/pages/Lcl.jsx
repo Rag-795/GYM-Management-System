@@ -145,9 +145,6 @@ const Lcl = () => {
                     {link.name}
                   </a>
                 ))}
-                <button onClick={goToAdmin} className="bg-yellow-400 text-black px-6 py-2 rounded-full font-bold hover:bg-yellow-300 transition-colors cursor-pointer">
-                  Get Started
-                </button>
               </div>
             </div>
 
@@ -176,9 +173,6 @@ const Lcl = () => {
                   {link.name}
                 </a>
               ))}
-              <button onClick={() => { setIsMenuOpen(false); goToAdmin(); }} className="w-full bg-yellow-400 text-black px-6 py-2 rounded-full font-bold hover:bg-yellow-300 transition-colors mt-4">
-                Get Started
-              </button>
             </div>
           </div>
         )}
@@ -205,7 +199,7 @@ const Lcl = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button className='btn-primary' onClick={goToSignup}>
-                  Start Free Trial
+                  Get Started
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </button>
 
@@ -412,11 +406,8 @@ const Lcl = () => {
             Join thousands of members who have already transformed their lives with FitHub
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button onClick={goToSignup} className="bg-black text-yellow-400 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-900 transition-all">
+            <button onClick={goToSignup} className="bg-black text-yellow-400 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-900 cursor-pointer transition-all">
               Start Your Journey
-            </button>
-            <button className="border-2 border-black text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-black hover:text-yellow-400 transition-all">
-              Contact Sales
             </button>
           </div>
         </div>
