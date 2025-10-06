@@ -576,7 +576,7 @@ const Trainers = () => {
                       name="salary"
                       value={formData.salary}
                       onChange={handleInputChange}
-                      placeholder="Amount in USD"
+                      placeholder="Amount in Rupees"
                       required
                       min='0'
                     />

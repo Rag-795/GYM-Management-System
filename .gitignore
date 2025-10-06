@@ -14,7 +14,7 @@ dist-ssr
 # virtual env
 /dbms 
 /backend/__pycache__/
-
+/backend/.venv/
 
 .env
 .env.local
