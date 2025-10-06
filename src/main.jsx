@@ -6,6 +6,7 @@ import Lcl from './pages/Lcl'
 import LoginPage from './pages/auth/LoginPage'
 import SignupPage from './pages/auth/SignupPage'
 import AdminLayout from './components/AdminLayout'
+import TrainerLayout from './components/TrainerLayout'
 import Dashboard from './pages/admin/Dashboard'
 import Members from './pages/admin/Members'
 import Trainers from './pages/admin/Trainers'
@@ -15,7 +16,15 @@ import Equipment from './pages/admin/Equipment'
 import Attendance from './pages/admin/Attendance'
 import Payments from './pages/admin/Payments'
 import MemberDashboard from './pages/member/MemberDashboard'
-import TrainerDashboard from './pages/trainer/TrainerDashboard'
+import TrainerDashboard from './pages/trainer/Dashboard'
+import DietPlanCreator from './pages/trainer/DietPlan'
+import WorkoutPlanCreator from './pages/trainer/WorkoutPlan'
+// import MyMembers from './pages/trainer/MyMembers'
+// import MemberProfile from './pages/trainer/MemberProfile'
+
+
+import TrainerProfile from './pages/trainer/TrainerProfile'
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -29,7 +38,15 @@ createRoot(document.getElementById('root')).render(
         <Route path="/member/dashboard" element={<MemberDashboard />} />
         
         {/* Trainer Routes */}
-        <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
+        <Route path="/trainer" element={<TrainerLayout />}>
+          <Route index element={<Navigate to="/trainer/dashboard" replace />} />
+          <Route path="dashboard" element={<TrainerDashboard />} />
+          {/* <Route path="members" element={<MyMembers />} /> */}
+          {/* <Route path="member/:id" element={<MemberProfile />} /> */}
+          <Route path="workout-plans" element={<WorkoutPlanCreator />} />
+          <Route path="diet-plans" element={<DietPlanCreator />} />
+          <Route path="profile" element={<TrainerProfile />} />
+        </Route>
         
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminLayout />}>
