@@ -77,7 +77,7 @@ const LoginPage = () => {
         const userRole = response.user.role;
         switch (userRole) {
           case 'ADMIN':
-            navigate('/admin/dashboard');
+            navigate('/admin/members');
             break;
           case 'TRAINER':
             navigate('/trainer/dashboard');

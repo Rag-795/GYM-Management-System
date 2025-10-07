@@ -124,9 +124,31 @@ class ApiService {
   }
 
   // Trainer endpoints
-  async getTrainers() {
-    return this.request('/api/trainers/', {
+  async getTrainers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/trainers/?${queryString}` : '/api/trainers/';
+    return this.request(endpoint, {
       method: 'GET',
+    });
+  }
+
+  async getTrainer(trainerId) {
+    return this.request(`/api/trainers/${trainerId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createTrainer(trainerData) {
+    return this.request('/api/trainers/', {
+      method: 'POST',
+      body: JSON.stringify(trainerData),
+    });
+  }
+
+  async updateTrainer(trainerId, trainerData) {
+    return this.request(`/api/trainers/${trainerId}`, {
+      method: 'PUT',
+      body: JSON.stringify(trainerData),
     });
   }
 
@@ -134,6 +156,18 @@ class ApiService {
     return this.request(`/api/trainers/${trainerId}/salary`, {
       method: 'PUT',
       body: JSON.stringify({ salary }),
+    });
+  }
+
+  async getTrainerSpecialties() {
+    return this.request('/api/trainers/specialties', {
+      method: 'GET',
+    });
+  }
+
+  async getTrainerStats() {
+    return this.request('/api/trainers/stats', {
+      method: 'GET',
     });
   }
 

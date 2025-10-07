@@ -19,6 +19,7 @@ import MemberDashboard from './pages/member/MemberDashboard'
 import TrainerDashboard from './pages/trainer/Dashboard'
 import DietPlanCreator from './pages/trainer/DietPlan'
 import WorkoutPlanCreator from './pages/trainer/WorkoutPlan'
+import TrainerMembers from './pages/trainer/Members'
 // import MyMembers from './pages/trainer/MyMembers'
 // import MemberProfile from './pages/trainer/MemberProfile'
 
@@ -41,7 +42,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/trainer" element={<TrainerLayout />}>
           <Route index element={<Navigate to="/trainer/dashboard" replace />} />
           <Route path="dashboard" element={<TrainerDashboard />} />
-          {/* <Route path="members" element={<MyMembers />} /> */}
+          <Route path="members" element={<TrainerMembers />} />
           {/* <Route path="member/:id" element={<MemberProfile />} /> */}
           <Route path="workout-plans" element={<WorkoutPlanCreator />} />
           <Route path="diet-plans" element={<DietPlanCreator />} />
@@ -55,9 +56,9 @@ createRoot(document.getElementById('root')).render(
           <Route path="members" element={<Members />} />
           <Route path="trainers" element={<Trainers />} />
           <Route path="memberships" element={<Memberships />} />
-          <Route path="plans" element={<Plans />} />
+          {/* <Route path="plans" element={<Plans />} /> */}
           <Route path="equipment" element={<Equipment />} />
-          <Route path="attendance" element={<Attendance />} />
+          {/* <Route path="attendance" element={<Attendance />} /> */}
           <Route path="payments" element={<Payments />} />
         </Route>
         

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Plus, Filter, Download, Edit, Trash2, 
   Package, AlertTriangle, CheckCircle, Clock, 
@@ -8,6 +8,7 @@ import {
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Alert } from '../../components/Alert';
+import apiService from '../../services/api';
 
 const Equipment = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,144 +17,207 @@ const Equipment = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
+  const [equipmentList, setEquipmentList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    operational: 0,
+    maintenance: 0,
+    needsAttention: 0,
+    totalValue: '$0',
+    utilizationRate: '0%'
+  });
 
-  // Sample equipment data
-  const equipmentList = [
-    {
-      id: 1,
-      name: 'Treadmill Pro X500',
-      category: 'Cardio',
-      brand: 'LifeFitness',
-      model: 'X500',
-      quantity: 8,
-      available: 6,
-      inUse: 2,
-      status: 'operational',
-      purchaseDate: '2023-06-15',
-      warrantyExpiry: '2025-06-15',
-      cost: '$3,500',
-      location: 'Main Floor - Zone A',
-      lastMaintenance: '2024-01-10',
-      nextMaintenance: '2024-02-10',
-      maintenanceHistory: [
-        { date: '2024-01-10', type: 'Routine', technician: 'John Tech', notes: 'Belt adjusted, lubrication done' },
-        { date: '2023-12-10', type: 'Routine', technician: 'Mike Service', notes: 'Regular checkup' },
-        { date: '2023-11-10', type: 'Repair', technician: 'John Tech', notes: 'Display unit replaced' }
-      ],
-      usageHours: 1250,
-      condition: 'Excellent',
-      qrCode: 'TRD001'
-    },
-    {
-      id: 2,
-      name: 'Olympic Barbell',
-      category: 'Strength',
-      brand: 'Rogue',
-      model: 'Ohio Bar',
-      quantity: 15,
-      available: 12,
-      inUse: 3,
-      status: 'operational',
-      purchaseDate: '2023-03-20',
-      warrantyExpiry: '2028-03-20',
-      cost: '$350',
-      location: 'Weight Room - Rack Area',
-      lastMaintenance: '2024-01-05',
-      nextMaintenance: '2024-03-05',
-      maintenanceHistory: [
-        { date: '2024-01-05', type: 'Inspection', technician: 'Sarah M.', notes: 'Checked for bend, cleaned and oiled' }
-      ],
-      usageHours: null,
-      condition: 'Good',
-      qrCode: 'BAR001'
-    },
-    {
-      id: 3,
-      name: 'Rowing Machine',
-      category: 'Cardio',
-      brand: 'Concept2',
-      model: 'Model D',
-      quantity: 5,
-      available: 4,
-      inUse: 0,
-      status: 'maintenance',
-      purchaseDate: '2022-11-10',
-      warrantyExpiry: '2024-11-10',
-      cost: '$1,200',
-      location: 'Cardio Section - Row B',
-      lastMaintenance: '2024-01-18',
-      nextMaintenance: '2024-01-25',
-      maintenanceHistory: [
-        { date: '2024-01-18', type: 'Repair', technician: 'Tech Team', notes: 'Chain replacement in progress' }
-      ],
-      usageHours: 2100,
-      condition: 'Under Maintenance',
-      qrCode: 'ROW001'
-    },
-    {
-      id: 4,
-      name: 'Dumbbells Set',
-      category: 'Strength',
-      brand: 'PowerBlock',
-      model: 'Elite Series',
-      quantity: 20,
-      available: 18,
-      inUse: 2,
-      status: 'operational',
-      purchaseDate: '2023-01-15',
-      warrantyExpiry: '2025-01-15',
-      cost: '$150',
-      location: 'Free Weights Area',
-      lastMaintenance: '2023-12-20',
-      nextMaintenance: '2024-02-20',
-      maintenanceHistory: [
-        { date: '2023-12-20', type: 'Routine', technician: 'Mike S.', notes: 'Inspection and cleaning' }
-      ],
-      usageHours: null,
-      condition: 'Excellent',
-      qrCode: 'DMB001'
-    },
-    {
-      id: 5,
-      name: 'Leg Press Machine',
-      category: 'Strength',
-      brand: 'Hammer Strength',
-      model: 'Linear LP',
-      quantity: 2,
-      available: 1,
-      inUse: 1,
-      status: 'needs-attention',
-      purchaseDate: '2022-08-20',
-      warrantyExpiry: '2024-08-20',
-      cost: '$4,200',
-      location: 'Strength Training - Zone C',
-      lastMaintenance: '2023-11-15',
-      nextMaintenance: '2024-01-25',
-      maintenanceHistory: [
-        { date: '2023-11-15', type: 'Repair', technician: 'John Tech', notes: 'Cable adjustment needed soon' }
-      ],
-      usageHours: 3500,
-      condition: 'Fair',
-      qrCode: 'LEG001'
+  // Add equipment form state
+  const [addForm, setAddForm] = useState({
+    name: '',
+    category: '',
+    quantity: 1,
+    purchase_date: '',
+    last_maintenance_date: '',
+    next_maintenance_date: ''
+  });
+
+  // Fetch equipment data on component mount
+  useEffect(() => {
+    fetchEquipment();
+    fetchCategories();
+    fetchStats();
+  }, []);
+
+  const fetchEquipment = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getEquipment({
+        search: searchTerm,
+        category: filterCategory !== 'all' ? filterCategory : '',
+        page: 1,
+        limit: 100
+      });
+      
+      // Handle both array and object response formats
+      const equipmentData = response.equipment || response || [];
+      setEquipmentList(Array.isArray(equipmentData) ? equipmentData : []);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching equipment:', error);
+      setError('Failed to load equipment data');
+      setEquipmentList([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  // Calculate statistics
-  const stats = {
-    total: equipmentList.length,
-    operational: equipmentList.filter(e => e.status === 'operational').length,
-    maintenance: equipmentList.filter(e => e.status === 'maintenance').length,
-    needsAttention: equipmentList.filter(e => e.status === 'needs-attention').length,
-    totalValue: '$250,000',
-    utilizationRate: '78%'
+  const fetchCategories = async () => {
+    try {
+      const response = await apiService.getEquipmentCategories();
+      setCategories(response.categories || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await apiService.getEquipmentStats();
+      if (response.stats) {
+        setStats(response.stats);
+      } else {
+        // Calculate stats from equipmentList if API doesn't provide them
+        calculateStatsFromEquipment();
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      // Fallback to calculating from current equipment list
+      calculateStatsFromEquipment();
+    }
+  };
+
+  const calculateStatsFromEquipment = () => {
+    const operational = equipmentList.filter(e => getStatusFromMaintenance(e) === 'operational').length;
+    const maintenance = equipmentList.filter(e => getStatusFromMaintenance(e) === 'maintenance').length;
+    const needsAttention = equipmentList.filter(e => getStatusFromMaintenance(e) === 'needs-attention').length;
+    
+    setStats({
+      total: equipmentList.length,
+      operational,
+      maintenance,
+      needsAttention,
+      totalValue: '$0', // Would need cost data from backend
+      utilizationRate: '0%' // Would need usage data from backend
+    });
+  };
+
+  // Recalculate stats when equipment list changes
+  useEffect(() => {
+    if (equipmentList.length > 0) {
+      calculateStatsFromEquipment();
+    }
+  }, [equipmentList]);
+
+  // Refetch equipment when filters change (with debouncing for search)
+  useEffect(() => {
+    if (!loading) {
+      const timeoutId = setTimeout(() => {
+        fetchEquipment();
+      }, searchTerm ? 500 : 0); // 500ms debounce for search, immediate for filters
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchTerm, filterCategory, filterStatus]);
+
+  const handleAddEquipment = async (e) => {
+    e.preventDefault();
+    try {
+      const equipmentData = {
+        name: addForm.name,
+        category: addForm.category,
+        quantity: parseInt(addForm.quantity),
+        purchase_date: addForm.purchase_date || null,
+        last_maintenance_date: addForm.last_maintenance_date || null,
+        next_maintenance_date: addForm.next_maintenance_date || null
+      };
+
+      await apiService.createEquipment(equipmentData);
+      setShowAddModal(false);
+      setAddForm({
+        name: '',
+        category: '',
+        quantity: 1,
+        purchase_date: '',
+        last_maintenance_date: '',
+        next_maintenance_date: ''
+      });
+      fetchEquipment(); // Refresh the list
+      fetchStats(); // Refresh stats
+    } catch (error) {
+      console.error('Error adding equipment:', error);
+      setError('Failed to add equipment: ' + error.message);
+    }
+  };
+
+  const handleDeleteEquipment = async (equipmentId, equipmentName) => {
+    if (window.confirm(`Are you sure you want to delete "${equipmentName}"?`)) {
+      try {
+        await apiService.deleteEquipment(equipmentId);
+        fetchEquipment(); // Refresh the list
+        fetchStats(); // Refresh stats
+      } catch (error) {
+        console.error('Error deleting equipment:', error);
+        setError('Failed to delete equipment: ' + error.message);
+      }
+    }
+  };
+
+  const handleFormChange = (field, value) => {
+    setAddForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Helper functions to determine maintenance status based on backend data
+  const getMaintenanceStatus = (equipment) => {
+    if (!equipment.next_maintenance_date) return 'unknown';
+    
+    const today = new Date();
+    const nextDate = new Date(equipment.next_maintenance_date);
+    const daysDiff = Math.ceil((nextDate - today) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff < 0) return 'overdue';
+    if (daysDiff <= 7) return 'due-soon';
+    if (daysDiff <= 30) return 'due-this-month';
+    return 'good';
+  };
+
+  const getStatusFromMaintenance = (equipment) => {
+    const maintenanceStatus = getMaintenanceStatus(equipment);
+    switch(maintenanceStatus) {
+      case 'overdue': return 'needs-attention';
+      case 'due-soon': return 'maintenance';
+      default: return 'operational';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Not set';
+    return new Date(dateString).toLocaleDateString();
   };
 
   const filteredEquipment = equipmentList.filter(equipment => {
     const matchesSearch = equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         equipment.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          equipment.category.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || equipment.category.toLowerCase() === filterCategory.toLowerCase();
-    const matchesStatus = filterStatus === 'all' || equipment.status === filterStatus;
+    
+    // Apply status filter based on maintenance status
+    let matchesStatus = true;
+    if (filterStatus !== 'all') {
+      const equipmentStatus = getStatusFromMaintenance(equipment);
+      matchesStatus = equipmentStatus === filterStatus;
+    }
+    
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -167,18 +231,30 @@ const Equipment = () => {
     }
   };
 
-  const getConditionColor = (condition) => {
-    switch(condition) {
-      case 'Excellent': return 'text-green-400';
-      case 'Good': return 'text-blue-400';
-      case 'Fair': return 'text-yellow-400';
-      case 'Poor': return 'text-red-400';
+  const getConditionColor = (maintenanceStatus) => {
+    switch(maintenanceStatus) {
+      case 'good': return 'text-green-400';
+      case 'due-this-month': return 'text-blue-400';
+      case 'due-soon': return 'text-yellow-400';
+      case 'overdue': return 'text-red-400';
       default: return 'text-gray-400';
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-white">Loading equipment...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {error && (
+        <Alert type="error" message={error} onClose={() => setError(null)} />
+      )}
+      
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -267,10 +343,11 @@ const Equipment = () => {
               className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
             >
               <option value="all">All Categories</option>
-              <option value="cardio">Cardio</option>
-              <option value="strength">Strength</option>
-              <option value="flexibility">Flexibility</option>
-              <option value="accessories">Accessories</option>
+              {categories.map(category => (
+                <option key={category.name} value={category.name.toLowerCase()}>
+                  {category.name} ({category.count})
+                </option>
+              ))}
             </select>
             
             <select
@@ -286,14 +363,6 @@ const Equipment = () => {
             </select>
           </div>
           
-          <div className="flex gap-2">
-            <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
-              <Filter className="h-5 w-5" />
-            </button>
-            <button className="p-2 text-gray-400 hover:text-yellow-400 transition-colors">
-              <Download className="h-5 w-5" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -305,7 +374,7 @@ const Equipment = () => {
               <tr className="text-left text-gray-400 text-sm">
                 <th className="p-4">Equipment</th>
                 <th className="p-4">Category</th>
-                <th className="p-4">Location</th>
+                <th className="p-4">Purchase Date</th>
                 <th className="p-4">Condition</th>
                 <th className="p-4">Next Maintenance</th>
                 <th className="p-4">Status</th>
@@ -313,73 +382,80 @@ const Equipment = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredEquipment.map((equipment) => (
+              {filteredEquipment.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="p-8 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <Package className="h-12 w-12 text-gray-500" />
+                      <p className="text-gray-400">No equipment found</p>
+                      {searchTerm || filterCategory !== 'all' || filterStatus !== 'all' ? (
+                        <p className="text-gray-500 text-sm">Try adjusting your filters</p>
+                      ) : (
+                        <p className="text-gray-500 text-sm">Start by adding some equipment</p>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+              filteredEquipment.map((equipment) => {
+                const maintenanceStatus = getMaintenanceStatus(equipment);
+                const equipmentStatus = getStatusFromMaintenance(equipment);
+                
+                return (
                 <tr key={equipment.id} className="border-t border-gray-800 hover:bg-gray-800/50">
                   <td className="p-4">
                     <div>
                       <p className="text-white font-medium">{equipment.name}</p>
-                      <p className="text-gray-400 text-sm">{equipment.brand} - {equipment.model}</p>
-                      <p className="text-gray-500 text-xs">ID: {equipment.qrCode}</p>
+                      <p className="text-gray-400 text-sm">Qty: {equipment.quantity}</p>
+                      <p className="text-gray-500 text-xs">ID: {equipment.id.slice(0, 8)}</p>
                     </div>
                   </td>
                   <td className="p-4">
                     <span className="text-gray-300">{equipment.category}</span>
                   </td>
                   <td className="p-4">
-                    <span className="text-gray-300 text-sm">{equipment.location}</span>
+                    <span className="text-gray-300 text-sm">
+                      {equipment.purchase_date ? formatDate(equipment.purchase_date) : 'Not set'}
+                    </span>
                   </td>
                   <td className="p-4">
-                    <span className={`font-medium ${getConditionColor(equipment.condition)}`}>
-                      {equipment.condition}
+                    <span className={`font-medium ${getConditionColor(maintenanceStatus)}`}>
+                      {maintenanceStatus === 'good' ? 'Good' :
+                       maintenanceStatus === 'due-this-month' ? 'Due This Month' :
+                       maintenanceStatus === 'due-soon' ? 'Due Soon' :
+                       maintenanceStatus === 'overdue' ? 'Overdue' : 'Unknown'}
                     </span>
                   </td>
                   <td className="p-4">
                     <div className="space-y-1">
-                      <p className="text-gray-300 text-sm">{equipment.nextMaintenance}</p>
-                      {new Date(equipment.nextMaintenance) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && (
+                      <p className="text-gray-300 text-sm">{formatDate(equipment.next_maintenance_date)}</p>
+                      {maintenanceStatus === 'due-soon' && (
                         <p className="text-xs text-yellow-400">Due soon</p>
+                      )}
+                      {maintenanceStatus === 'overdue' && (
+                        <p className="text-xs text-red-400">Overdue</p>
                       )}
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(equipment.status)}`}>
-                      {equipment.status.replace('-', ' ')}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(equipmentStatus)}`}>
+                      {equipmentStatus.replace('-', ' ')}
                     </span>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center space-x-2">
                       <button 
-                        className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
-                        title="View Details"
-                      >
-                        <Info className="h-4 w-4" />
-                      </button>
-                      <button 
-                        className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSelectedEquipment(equipment);
-                          setShowMaintenanceModal(true);
-                        }}
-                        className="p-1 text-gray-400 hover:text-yellow-400 transition-colors"
-                        title="Schedule Maintenance"
-                      >
-                        <Wrench className="h-4 w-4" />
-                      </button>
-                      <button 
                         className="p-1 text-gray-400 hover:text-red-400 transition-colors"
                         title="Delete"
+                        onClick={() => handleDeleteEquipment(equipment.id, equipment.name)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              }))}
             </tbody>
           </table>
         </div>
@@ -391,56 +467,69 @@ const Equipment = () => {
           <div className="bg-gray-900 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold text-white mb-6">Add New Equipment</h2>
             
-            <form className="space-y-4">
+            <form onSubmit={handleAddEquipment} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Equipment Name" placeholder="e.g., Treadmill Pro" required />
-                <Input label="Brand" placeholder="e.g., LifeFitness" required />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Model" placeholder="e.g., X500" />
+                <Input 
+                  label="Equipment Name" 
+                  placeholder="e.g., Treadmill Pro" 
+                  value={addForm.name}
+                  onChange={(e) => handleFormChange('name', e.target.value)}
+                  required 
+                />
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2">
                     Category <span className="text-yellow-400">*</span>
                   </label>
-                  <select className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400">
-                    <option>Cardio</option>
-                    <option>Strength</option>
-                    <option>Flexibility</option>
-                    <option>Accessories</option>
+                  <select 
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+                    value={addForm.category}
+                    onChange={(e) => handleFormChange('category', e.target.value)}
+                    required
+                  >
+                    <option value="">Select Category</option>
+                    <option value="Cardio">Cardio</option>
+                    <option value="Strength">Strength</option>
+                    <option value="Flexibility">Flexibility</option>
+                    <option value="Accessories">Accessories</option>
                   </select>
                 </div>
               </div>
               
               <div className="grid grid-cols-3 gap-4">
-                <Input label="Quantity" type="number" placeholder="1" required />
-                <Input label="Cost per Unit" placeholder="$0.00" required />
-                <Input label="Purchase Date" type="date" required />
+                <Input 
+                  label="Quantity" 
+                  type="number" 
+                  placeholder="1" 
+                  value={addForm.quantity}
+                  onChange={(e) => handleFormChange('quantity', e.target.value)}
+                  required 
+                />
+                <Input 
+                  label="Purchase Date" 
+                  type="date" 
+                  value={addForm.purchase_date}
+                  onChange={(e) => handleFormChange('purchase_date', e.target.value)}
+                />
+                <Input 
+                  label="Last Maintenance" 
+                  type="date" 
+                  value={addForm.last_maintenance_date}
+                  onChange={(e) => handleFormChange('last_maintenance_date', e.target.value)}
+                />
               </div>
               
-              <Input label="Location" placeholder="e.g., Main Floor - Zone A" required />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Warranty Period (months)" type="number" placeholder="24" />
-                <Input label="QR/Serial Code" placeholder="e.g., TRD001" />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Notes
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                  rows="3"
-                  placeholder="Additional notes..."
-                ></textarea>
-              </div>
+              <Input 
+                label="Next Maintenance Date" 
+                type="date" 
+                value={addForm.next_maintenance_date}
+                onChange={(e) => handleFormChange('next_maintenance_date', e.target.value)}
+              />
               
               <div className="flex justify-end space-x-4 pt-4">
-                <Button variant="ghost" onClick={() => setShowAddModal(false)}>
+                <Button variant="ghost" type="button" onClick={() => setShowAddModal(false)}>
                   Cancel
                 </Button>
-                <Button variant="primary">
+                <Button variant="primary" type="submit">
                   Add Equipment
                 </Button>
               </div>
@@ -449,91 +538,6 @@ const Equipment = () => {
         </div>
       )}
 
-      {/* Maintenance Modal */}
-      {showMaintenanceModal && selectedEquipment && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-white mb-4">
-              Schedule Maintenance
-            </h2>
-            <p className="text-gray-400 mb-6">Equipment: {selectedEquipment.name}</p>
-            
-            <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Maintenance Type <span className="text-yellow-400">*</span>
-                </label>
-                <select className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400">
-                  <option>Routine Maintenance</option>
-                  <option>Repair</option>
-                  <option>Inspection</option>
-                  <option>Deep Cleaning</option>
-                </select>
-              </div>
-              
-              <Input label="Scheduled Date" type="date" required />
-              
-              <Input label="Assigned Technician" placeholder="Enter technician name" />
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Priority
-                </label>
-                <select className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400">
-                  <option>Low</option>
-                  <option>Medium</option>
-                  <option>High</option>
-                  <option>Urgent</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Notes
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                  rows="3"
-                  placeholder="Maintenance notes..."
-                ></textarea>
-              </div>
-
-              {/* Maintenance History */}
-              <div className="border-t border-gray-700 pt-4">
-                <h3 className="text-lg font-semibold text-white mb-3">Maintenance History</h3>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {selectedEquipment.maintenanceHistory.map((history, idx) => (
-                    <div key={idx} className="bg-gray-800 rounded-lg p-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-white font-medium text-sm">{history.type}</p>
-                          <p className="text-gray-400 text-xs">{history.date} - {history.technician}</p>
-                        </div>
-                      </div>
-                      <p className="text-gray-300 text-xs mt-1">{history.notes}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-4 pt-4">
-                <Button 
-                  variant="ghost" 
-                  onClick={() => {
-                    setShowMaintenanceModal(false);
-                    setSelectedEquipment(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button variant="primary">
-                  Schedule Maintenance
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

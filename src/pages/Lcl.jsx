@@ -71,21 +71,21 @@ const Lcl = () => {
   const pricingPlans = [
     {
       name: 'Basic',
-      price: '$29',
+      price: '₹599',
       period: '/month',
       features: ['Access to gym equipment', 'Locker room access', 'Free fitness assessment', 'Mobile app access'],
       recommended: false
     },
     {
       name: 'Premium',
-      price: '$59',
+      price: '₹9999',
       period: '/month',
       features: ['Everything in Basic', 'Unlimited group classes', 'Personal training session', 'Nutrition consultation', 'Priority booking'],
       recommended: true
     },
     {
       name: 'Elite',
-      price: '$99',
+      price: '₹4999',
       period: '/month',
       features: ['Everything in Premium', '4 PT sessions/month', 'Custom meal plans', 'Recovery zone access', 'Guest passes (2/month)'],
       recommended: false
@@ -466,7 +466,7 @@ const Lcl = () => {
                 </li>
                 <li className="flex items-center text-gray-400">
                   <MapPin className="h-5 w-5 mr-3 text-yellow-400" />
-                  123 Fitness St, Gym City
+                  Amrita Vishwa Vidyapeetham, Coimbatore
                 </li>
               </ul>
             </div>

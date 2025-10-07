@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   IndianRupee, Download, Filter, Calendar, ArrowUp, ArrowDown,
-  Wallet, CreditCard, Banknote, Smartphone, PieChart, BarChart3
+  Wallet, CreditCard, Banknote, Smartphone, PieChart, BarChart3, Loader2
 } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Alert } from '../../components/Alert';
+import apiService from '../../services/api';
 
 import { Line, Doughnut } from 'react-chartjs-2';
 import {
@@ -39,14 +40,22 @@ const modeColors = {
   UPI: '#22c55e',         // green
   Cash: '#f59e0b',        // amber
   Card: '#3b82f6',        // blue
+  'Credit Card': '#3b82f6', // blue
+  'Debit Card': '#3b82f6',  // blue
   NetBanking: '#a855f7',  // purple
+  'Bank Transfer': '#a855f7', // purple
+  Check: '#8b5cf6',       // violet
 };
 
 const modeIcon = {
   UPI: Smartphone,
   Cash: Banknote,
   Card: CreditCard,
+  'Credit Card': CreditCard,
+  'Debit Card': CreditCard,
   NetBanking: Wallet,
+  'Bank Transfer': Wallet,
+  Check: Banknote,
 };
 
 // Utility
@@ -55,68 +64,128 @@ const addDays = (d, n) => toISODate(new Date(d.getFullYear(), d.getMonth(), d.ge
 const startOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
 const endOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
 
-function generateSamplePayments() {
-  // Creates sample payments spanning current and last month
-  const modes = ['UPI', 'Cash', 'Card', 'NetBanking'];
-  const descriptions = [
-    'Monthly Membership', 'Personal Training Session', 'Protein Supplement',
-    'Day Pass', 'Yoga Class', 'HIIT Class', 'Locker Fee', 'Annual Membership'
-  ];
-  const today = new Date();
-  const entries = [];
-  let id = 1;
-
-  // ~50 entries in last 60 days
-  for (let i = 0; i < 50; i++) {
-    const offset = Math.floor(Math.random() * 60); // within last 60 days
-    const d = new Date();
-    d.setDate(today.getDate() - offset);
-
-    const amount = Math.floor(500 + Math.random() * 5000); // 500 - 5500
-    const mode = modes[Math.floor(Math.random() * modes.length)];
-    const desc = descriptions[Math.floor(Math.random() * descriptions.length)];
-
-    entries.push({
-      payment_id: id++,
-      description: desc,
-      payment_date: toISODate(d),
-      amount,
-      payment_mode: mode
-    });
-  }
-
-  // Ensure some higher revenue spikes near month starts/ends
-  const ensureDates = [
-    startOfMonth(today), endOfMonth(today),
-    startOfMonth(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
-    endOfMonth(new Date(today.getFullYear(), today.getMonth() - 1, 1))
-  ];
-  ensureDates.forEach((d, idx) => {
-    entries.push({
-      payment_id: id++,
-      description: idx % 2 ? 'Annual Membership' : 'Premium Membership',
-      payment_date: toISODate(d),
-      amount: 7999 + idx * 500,
-      payment_mode: ['Card', 'UPI', 'NetBanking', 'Cash'][idx % 4]
-    });
-  });
-
-  return entries;
-}
-
 const Payments = () => {
-  const [payments, setPayments] = useState(() => generateSamplePayments());
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    period_total: 0,
+    all_time_total: 0,
+    average_payment: 0,
+    daily_revenue: [],
+    monthly_revenue: [],
+    payment_modes: []
+  });
   const [search, setSearch] = useState('');
   const [range, setRange] = useState('last30'); // last7, last30, thisMonth, lastMonth, custom
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // NOTE: When backend is ready (Flask + Postgres), replace with:
-  // useEffect(() => {
-  //   api.get('/payments', { params: { startDate, endDate } })
-  //     .then(res => setPayments(res.data))
-  //     .catch(() => {});
-  // }, [startDate, endDate]);
+  // Fetch data on component mount and when filters change
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      fetchPayments();
+    }
+  }, [range, startDate, endDate]);
+
+  useEffect(() => {
+    if (!loading) {
+      fetchStats();
+    }
+  }, [range, startDate, endDate]);
+
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        page: 1,
+        limit: 1000 // Get all payments for the charts and calculations
+      };
+
+      // Add date filters based on range
+      const dateRange = getEffectiveDateRange();
+      if (dateRange.start) {
+        params.start_date = dateRange.start;
+      }
+      if (dateRange.end) {
+        params.end_date = dateRange.end;
+      }
+
+      const response = await apiService.getPayments(params);
+      
+      // Transform the payment data to match the expected format
+      const transformedPayments = (response.payments || []).map(payment => ({
+        payment_id: payment.id,
+        description: payment.plan_name || 'Gym Payment',
+        payment_date: payment.date.split('T')[0], // Convert to YYYY-MM-DD format
+        amount: payment.amount,
+        payment_mode: payment.mode,
+        member_name: payment.member_name,
+        receipt_number: payment.receipt_number
+      }));
+
+      setPayments(transformedPayments);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      setError('Failed to load payment data. Please try again.');
+      setPayments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const period = range === 'last7' ? 'week' : range === 'last30' ? 'month' : 'month';
+      const response = await apiService.getPaymentStats({ period });
+      setStats(response);
+    } catch (error) {
+      console.error('Error fetching payment stats:', error);
+    }
+  };
+
+  const getEffectiveDateRange = () => {
+    const today = new Date();
+    switch (range) {
+      case 'last7':
+        return {
+          start: addDays(today, -6),
+          end: toISODate(today)
+        };
+      case 'last30':
+        return {
+          start: addDays(today, -29),
+          end: toISODate(today)
+        };
+      case 'thisMonth':
+        return {
+          start: toISODate(startOfMonth(today)),
+          end: toISODate(endOfMonth(today))
+        };
+      case 'lastMonth':
+        const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        return {
+          start: toISODate(startOfMonth(lastMonthDate)),
+          end: toISODate(endOfMonth(lastMonthDate))
+        };
+      case 'custom':
+        return startDate && endDate ? { start: startDate, end: endDate } : {
+          start: addDays(today, -29),
+          end: toISODate(today)
+        };
+      default:
+        return {
+          start: addDays(today, -29),
+          end: toISODate(today)
+        };
+    }
+  };
 
   const today = new Date();
   const computedRanges = useMemo(() => {
@@ -132,41 +201,38 @@ const Payments = () => {
   }, [today]);
 
   const effectiveRange = useMemo(() => {
-    switch (range) {
-      case 'last7': return { start: computedRanges.s7, end: computedRanges.eNow };
-      case 'last30': return { start: computedRanges.s30, end: computedRanges.eNow };
-      case 'thisMonth': return { start: computedRanges.sThis, end: computedRanges.eThis };
-      case 'lastMonth': return { start: computedRanges.sLast, end: computedRanges.eLast };
-      case 'custom':
-        return startDate && endDate ? { start: startDate, end: endDate } : { start: computedRanges.s30, end: computedRanges.eNow };
-      default:
-        return { start: computedRanges.s30, end: computedRanges.eNow };
-    }
-  }, [range, startDate, endDate, computedRanges]);
+    return getEffectiveDateRange();
+  }, [range, startDate, endDate]);
 
   const filteredPayments = useMemo(() => {
+    if (loading) return [];
+    
     return payments
-      .filter(p => {
-        return p.payment_date >= effectiveRange.start && p.payment_date <= effectiveRange.end;
-      })
       .filter(p => {
         const q = search.trim().toLowerCase();
         if (!q) return true;
         return (
-          p.description.toLowerCase().includes(q) ||
-          p.payment_mode.toLowerCase().includes(q) ||
+          (p.description && p.description.toLowerCase().includes(q)) ||
+          (p.payment_mode && p.payment_mode.toLowerCase().includes(q)) ||
+          (p.member_name && p.member_name.toLowerCase().includes(q)) ||
           String(p.payment_id).includes(q)
         );
       })
       .sort((a, b) => (a.payment_date < b.payment_date ? 1 : -1));
-  }, [payments, effectiveRange, search]);
+  }, [payments, search, loading]);
 
-  // Stats: This month, Last month, MoM
+  // Stats: Use backend data when available, fallback to calculated values
   const lastMonthRevenue = useMemo(() => {
+    if (stats.monthly_revenue && stats.monthly_revenue.length > 0) {
+      // Get last month's revenue from stats
+      const lastMonth = stats.monthly_revenue[stats.monthly_revenue.length - 1];
+      return lastMonth ? lastMonth.revenue : 0;
+    }
+    // Fallback to calculation from payments
     return payments
       .filter(p => p.payment_date >= computedRanges.sLast && p.payment_date <= computedRanges.eLast)
       .reduce((sum, p) => sum + p.amount, 0);
-  }, [payments, computedRanges]);
+  }, [payments, computedRanges, stats]);
 
   const thisMonthRevenue = useMemo(() => {
     return payments
@@ -175,13 +241,18 @@ const Payments = () => {
   }, [payments, computedRanges]);
 
   const prevToLastMonthRevenue = useMemo(() => {
+    if (stats.monthly_revenue && stats.monthly_revenue.length > 1) {
+      const prevMonth = stats.monthly_revenue[stats.monthly_revenue.length - 2];
+      return prevMonth ? prevMonth.revenue : 0;
+    }
+    // Fallback calculation
     const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
     const sPrev = toISODate(startOfMonth(prevMonthDate));
     const ePrev = toISODate(endOfMonth(prevMonthDate));
     return payments
       .filter(p => p.payment_date >= sPrev && p.payment_date <= ePrev)
       .reduce((sum, p) => sum + p.amount, 0);
-  }, [payments, today]);
+  }, [payments, today, stats]);
 
   const momChange = useMemo(() => {
     if (prevToLastMonthRevenue === 0) return null;
@@ -189,14 +260,22 @@ const Payments = () => {
     return (diff / prevToLastMonthRevenue) * 100;
   }, [lastMonthRevenue, prevToLastMonthRevenue]);
 
-  // Mode breakdown (for current filtered range)
+  // Mode breakdown (use backend stats when available)
   const modeTotals = useMemo(() => {
+    if (stats.payment_modes && stats.payment_modes.length > 0) {
+      const totals = {};
+      stats.payment_modes.forEach(mode => {
+        totals[mode.mode] = mode.total_amount;
+      });
+      return totals;
+    }
+    // Fallback to calculation from filtered payments
     const totals = {};
     filteredPayments.forEach(p => {
       totals[p.payment_mode] = (totals[p.payment_mode] || 0) + p.amount;
     });
     return totals;
-  }, [filteredPayments]);
+  }, [filteredPayments, stats]);
 
   const totalRevenueInRange = useMemo(
     () => filteredPayments.reduce((sum, p) => sum + p.amount, 0),
@@ -205,8 +284,30 @@ const Payments = () => {
   const transactionCount = filteredPayments.length;
   const avgTicket = transactionCount ? totalRevenueInRange / transactionCount : 0;
 
-  // Daily revenue for line chart (show last 30 days for consistency)
+  // Daily revenue for line chart (use backend data when available)
   const lineChartData = useMemo(() => {
+    if (stats.daily_revenue && stats.daily_revenue.length > 0) {
+      const labels = stats.daily_revenue.map(day => 
+        new Date(day.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+      );
+      const values = stats.daily_revenue.map(day => day.revenue);
+      
+      return {
+        labels,
+        datasets: [
+          {
+            label: 'Revenue (INR)',
+            data: values,
+            borderColor: '#facc15',
+            backgroundColor: 'rgba(250, 204, 21, 0.12)',
+            fill: true,
+            tension: 0.35
+          }
+        ]
+      };
+    }
+    
+    // Fallback to calculation from payments (show last 30 days)
     const labels = [];
     const dataMap = {};
     const baseStart = addDays(today, -29);
@@ -236,7 +337,7 @@ const Payments = () => {
         }
       ]
     };
-  }, [payments, today]);
+  }, [payments, today, stats]);
 
   const doughnutData = useMemo(() => {
     const labels = Object.keys(modeTotals);
@@ -319,63 +420,84 @@ const Payments = () => {
           <p className="text-gray-400">Track gym revenue trends and payment analytics</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" icon={Download} onClick={exportCSV}>
+          <Button 
+            variant="secondary" 
+            icon={Download} 
+            onClick={exportCSV}
+            disabled={loading}
+          >
             Export CSV
           </Button>
         </div>
       </div>
 
-      <Alert
-        type="info"
-        message="Showing demo data. Hook this page to your Flask API to load real payments from PostgreSQL."
-      />
+      {/* Error Alert */}
+      {error && (
+        <Alert
+          type="error"
+          message={error}
+        />
+      )}
 
-      {/* Filters */}
-      <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-            <RangeButton id="last7" label="Last 7 days" />
-            <RangeButton id="last30" label="Last 30 days" />
-            <RangeButton id="thisMonth" label="This Month" />
-            <RangeButton id="lastMonth" label="Last Month" />
-            <RangeButton id="custom" label="Custom" />
-          </div>
-
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
           <div className="flex items-center gap-3">
-            {range === 'custom' && (
-              <>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-gray-400" />
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                  />
-                </div>
-                <span className="text-gray-500">to</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                />
-              </>
-            )}
-
-            <div className="w-64">
-              <Input
-                label=""
-                name="search"
-                placeholder="Search description, mode or ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                icon={Filter}
-              />
-            </div>
+            <Loader2 className="h-6 w-6 animate-spin text-yellow-400" />
+            <span className="text-gray-300">Loading payment data...</span>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Main Content - Only show when not loading */}
+      {!loading && (
+        <>
+          {/* Filters */}
+          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex flex-wrap gap-2">
+                <RangeButton id="last7" label="Last 7 days" />
+                <RangeButton id="last30" label="Last 30 days" />
+                <RangeButton id="thisMonth" label="This Month" />
+                <RangeButton id="lastMonth" label="Last Month" />
+                <RangeButton id="custom" label="Custom" />
+              </div>
+
+              <div className="flex items-center gap-3">
+                {range === 'custom' && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-gray-400" />
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                    <span className="text-gray-500">to</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+                    />
+                  </>
+                )}
+
+                <div className="w-64">
+                  <Input
+                    label=""
+                    name="search"
+                    placeholder="Search description, mode, member..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    icon={Filter}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -481,31 +603,41 @@ const Payments = () => {
               <tr className="text-left text-gray-400 text-sm">
                 <th className="p-4">ID</th>
                 <th className="p-4">Date</th>
+                <th className="p-4">Member</th>
                 <th className="p-4">Description</th>
                 <th className="p-4">Mode</th>
                 <th className="p-4">Amount (INR)</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPayments.slice(0, 10).map((p) => (
-                <tr key={p.payment_id} className="border-t border-gray-800 hover:bg-gray-800/50">
-                  <td className="p-4 text-gray-300">{p.payment_id}</td>
-                  <td className="p-4 text-gray-300">{p.payment_date}</td>
-                  <td className="p-4 text-white">{p.description}</td>
-                  <td className="p-4">
-                    <span
-                      className="px-3 py-1 rounded-full text-xs font-semibold"
-                      style={{
-                        backgroundColor: (modeColors[p.payment_mode] || '#9ca3af') + '33',
-                        color: modeColors[p.payment_mode] || '#9ca3af'
-                      }}
-                    >
-                      {p.payment_mode}
-                    </span>
+              {filteredPayments.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-gray-400">
+                    No payments found for the selected criteria
                   </td>
-                  <td className="p-4 font-semibold text-white">{inr.format(p.amount)}</td>
                 </tr>
-              ))}
+              ) : (
+                filteredPayments.slice(0, 10).map((p) => (
+                  <tr key={p.payment_id} className="border-t border-gray-800 hover:bg-gray-800/50">
+                    <td className="p-4 text-gray-300">{p.payment_id}</td>
+                    <td className="p-4 text-gray-300">{p.payment_date}</td>
+                    <td className="p-4 text-gray-300">{p.member_name || 'N/A'}</td>
+                    <td className="p-4 text-white">{p.description}</td>
+                    <td className="p-4">
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-semibold"
+                        style={{
+                          backgroundColor: (modeColors[p.payment_mode] || '#9ca3af') + '33',
+                          color: modeColors[p.payment_mode] || '#9ca3af'
+                        }}
+                      >
+                        {p.payment_mode}
+                      </span>
+                    </td>
+                    <td className="p-4 font-semibold text-white">{inr.format(p.amount)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -522,6 +654,8 @@ const Payments = () => {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

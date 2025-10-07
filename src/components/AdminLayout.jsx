@@ -45,29 +45,13 @@ const AdminLayout = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
-              />
-            </div>
-            <button className="relative p-2 text-gray-400 hover:text-yellow-400">
-              <Bell className="h-6 w-6" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-yellow-400 rounded-full" />
-            </button>
+            
 
             <div className="relative">
               <button
                 onClick={() => setProfileOpen((p) => !p)}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800"
               >
-                <img
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100"
-                  alt="Admin"
-                  className="h-8 w-8 rounded-full"
-                />
                 <span className="text-white hidden md:block">Admin</span>
                 <ChevronDown className="h-4 w-4 text-gray-400" />
               </button>
@@ -93,13 +77,13 @@ const AdminLayout = () => {
         }`}
       >
         <nav className="p-4 space-y-1">
-          <NavLink to="/admin/dashboard" className={navLinkClass}><Home className="h-5 w-5" /> Dashboard</NavLink>
+          {/* <NavLink to="/admin/dashboard" className={navLinkClass}><Home className="h-5 w-5" /> Dashboard</NavLink> */}
           <NavLink to="/admin/members" className={navLinkClass}><Users className="h-5 w-5" /> Members</NavLink>
           <NavLink to="/admin/trainers" className={navLinkClass}><UserCheck className="h-5 w-5" /> Trainers</NavLink>
           <NavLink to="/admin/memberships" className={navLinkClass}><CreditCard className="h-5 w-5" /> Memberships</NavLink>
-          <NavLink to="/admin/plans" className={navLinkClass}><ClipboardList className="h-5 w-5" /> Workout & Diet Plans</NavLink>
+          {/* <NavLink to="/admin/plans" className={navLinkClass}><ClipboardList className="h-5 w-5" /> Workout & Diet Plans</NavLink> */}
           <NavLink to="/admin/equipment" className={navLinkClass}><TbTreadmill className="h-5 w-5" /> Equipment</NavLink>
-          <NavLink to="/admin/attendance" className={navLinkClass}><CheckSquare className="h-5 w-5" /> Attendance</NavLink>
+          {/* <NavLink to="/admin/attendance" className={navLinkClass}><CheckSquare className="h-5 w-5" /> Attendance</NavLink> */}
           <NavLink to="/admin/payments" className={navLinkClass}><ReceiptIndianRupee className="h-5 w-5" /> Payments</NavLink>
         </nav>
       </aside>

@@ -1,22 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Plus, Filter, Download, Edit, Trash2, Eye, 
   Mail, Phone, Calendar, Award, Clock, Star, Users,
-  X, Upload, FileText, DollarSign, TrendingUp, Pencil
+  X, Upload, FileText, DollarSign, TrendingUp, Pencil, Loader2
 } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { Alert } from '../../components/Alert';
+import apiService from '../../services/api';
 
 const Trainers = () => {
+  const [trainers, setTrainers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [specialties, setSpecialties] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterSpecialty, setFilterSpecialty] = useState('all');
+  const [filterAvailability, setFilterAvailability] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [editingSalary, setEditingSalary] = useState(null); // Stores ID of trainer whose salary is being edited
   const [newSalary, setNewSalary] = useState(''); // Stores the new salary value
   const [alert, setAlert] = useState(null); // For success/error messages
+  const [submitting, setSubmitting] = useState(false);
 
   // Form state for new trainer
   const [formData, setFormData] = useState({
@@ -36,88 +44,61 @@ const Trainers = () => {
     bio: ''
   });
 
-  // Sample data
-  const trainers = [
-    {
-      id: 1,
-      firstName: 'Mike',
-      lastName: 'Chen',
-      phone: '(555) 111-2222',
-      specialties: ['Weight Training', 'HIIT', 'CrossFit'],
-      experience: '5 years',
-      rating: 4.9,
-      totalClients: 45,
-      sessionsThisMonth: 142,
-      availability: 'Full-time',
-      joinDate: '2020-03-15',
-      status: 'active',
-      salary: '$4,500/month',
-      performance: 98
-    },
-    {
-      id: 2,
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      email: 'sarah.j@fithub.com',
-      phone: '(555) 333-4444',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-      specialties: ['Yoga', 'Pilates', 'Meditation'],
-      certifications: ['RYT-500', 'Pilates Instructor'],
-      experience: '8 years',
-      rating: 4.8,
-      totalClients: 38,
-      sessionsThisMonth: 128,
-      availability: 'Full-time',
-      joinDate: '2019-06-20',
-      status: 'active',
-      salary: '$5,200/month',
-      performance: 95
-    },
-    {
-      id: 3,
-      firstName: 'John',
-      lastName: 'Smith',
-      email: 'john.smith@fithub.com',
-      phone: '(555) 555-6666',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
-      specialties: ['Strength Training', 'Nutrition'],
-      certifications: ['NASM-CPT', 'Nutrition Specialist'],
-      experience: '3 years',
-      rating: 4.7,
-      totalClients: 32,
-      sessionsThisMonth: 115,
-      availability: 'Part-time',
-      joinDate: '2021-01-10',
-      status: 'active',
-      salary: '$2,800/month',
-      performance: 94
-    },
-    {
-      id: 4,
-      firstName: 'Emily',
-      lastName: 'Rodriguez',
-      email: 'emily.r@fithub.com',
-      phone: '(555) 777-8888',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100',
-      specialties: ['Cardio', 'Dance Fitness', 'Zumba'],
-      certifications: ['Zumba Instructor', 'Group Fitness'],
-      experience: '6 years',
-      rating: 4.9,
-      totalClients: 52,
-      sessionsThisMonth: 156,
-      availability: 'Full-time',
-      joinDate: '2018-11-05',
-      status: 'active',
-      salary: '$4,800/month',
-      performance: 97
-    }
-  ];
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchTrainers();
+    fetchSpecialties();
+  }, []);
 
-  const specialties = [
-    'Weight Training', 'Cardio', 'HIIT', 'CrossFit', 'Yoga', 
-    'Pilates', 'Boxing', 'MMA', 'Dance Fitness', 'Zumba',
-    'Strength Training', 'Nutrition', 'Rehabilitation'
-  ];
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const fetchTrainers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getTrainers({
+        search: debouncedSearchTerm,
+        specialty: filterSpecialty !== 'all' ? filterSpecialty : '',
+        availability: filterAvailability
+      });
+      setTrainers(response.trainers || []);
+    } catch (error) {
+      console.error('Error fetching trainers:', error);
+      setError('Failed to load trainers. Please try again.');
+      setTrainers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSpecialties = async () => {
+    try {
+      const response = await apiService.getTrainerSpecialties();
+      setSpecialties(response.specialties || []);
+    } catch (error) {
+      console.error('Error fetching specialties:', error);
+      // Fallback to default specialties
+      setSpecialties([
+        'Weight Training', 'Cardio', 'HIIT', 'CrossFit', 'Yoga', 
+        'Pilates', 'Boxing', 'MMA', 'Dance Fitness', 'Zumba',
+        'Strength Training', 'Nutrition', 'Rehabilitation'
+      ]);
+    }
+  };
+
+  // Refetch trainers when search or filter changes
+  useEffect(() => {
+    if (!loading) {
+      fetchTrainers();
+    }
+  }, [debouncedSearchTerm, filterSpecialty, filterAvailability]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -133,27 +114,74 @@ const Trainers = () => {
     }));
   };
 
-  const handleAddTrainer = (e) => {
+  const handleAddTrainer = async (e) => {
     e.preventDefault();
-    console.log('Adding trainer:', formData);
-    setShowAddModal(false);
-    // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      dateOfBirth: '',
-      gender: '',
-      address: '',
-      specialties: [],
-      certifications: '',
-      experience: '',
-      availability: '',
-      salary: '',
-      joinDate: '',
-      bio: ''
-    });
+    setSubmitting(true);
+    
+    try {
+      // Prepare data for backend
+      const trainerData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        gender: formData.gender,
+        specialties: formData.specialties,
+        experience: formData.experience,
+        availability: formData.availability,
+        salary: parseFloat(formData.salary) || 0,
+        bio: formData.bio
+      };
+
+      const response = await apiService.createTrainer(trainerData);
+      
+      setAlert({
+        type: 'success',
+        message: 'Trainer added successfully!'
+      });
+      
+      setShowAddModal(false);
+      
+      // Reset form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        dateOfBirth: '',
+        gender: '',
+        address: '',
+        specialties: [],
+        certifications: '',
+        experience: '',
+        availability: '',
+        salary: '',
+        joinDate: '',
+        bio: ''
+      });
+      
+      // Refresh trainers list
+      await fetchTrainers();
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setAlert(null);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error adding trainer:', error);
+      setAlert({
+        type: 'error',
+        message: error.message || 'Failed to add trainer. Please try again.'
+      });
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setAlert(null);
+      }, 5000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleViewTrainer = (trainer) => {
@@ -176,27 +204,18 @@ const Trainers = () => {
   // Save updated salary
   const saveSalary = async (trainerId) => {
     try {
-      // Format salary for display
-      const formattedSalary = `$${newSalary}/month`;
-      
-      // API call to update salary in database
-      // This is where you would make an API call to your backend
-      // For example:
-      // const response = await fetch('/api/trainers/${trainerId}/salary', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ salary: newSalary })
-      // });
-      
-      // For now, let's update the local state
-      const updatedTrainers = trainers.map(trainer => 
-        trainer.id === trainerId 
-          ? { ...trainer, salary: formattedSalary } 
-          : trainer
-      );
-      
-      // In a real application, you would update your state from the API response
-      // setTrainers(updatedTrainers);
+      // Validate salary input
+      const salaryValue = parseFloat(newSalary);
+      if (isNaN(salaryValue) || salaryValue < 0) {
+        setAlert({
+          type: 'error',
+          message: 'Please enter a valid salary amount.'
+        });
+        return;
+      }
+
+      // Call API to update salary
+      await apiService.updateTrainerSalary(trainerId, salaryValue);
       
       // Show success message
       setAlert({
@@ -208,6 +227,9 @@ const Trainers = () => {
       setEditingSalary(null);
       setNewSalary('');
       
+      // Refresh trainers list to get updated data
+      await fetchTrainers();
+      
       // Clear success message after 3 seconds
       setTimeout(() => {
         setAlert(null);
@@ -217,7 +239,7 @@ const Trainers = () => {
       console.error('Error updating salary:', error);
       setAlert({
         type: 'error',
-        message: 'Failed to update salary. Please try again.'
+        message: error.message || 'Failed to update salary. Please try again.'
       });
       
       // Clear error message after 5 seconds
@@ -230,10 +252,12 @@ const Trainers = () => {
   const filteredTrainers = trainers.filter(trainer => {
     const fullName = `${trainer.firstName} ${trainer.lastName}`.toLowerCase();
     const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-                         trainer.email.toLowerCase().includes(searchTerm.toLowerCase());
+                         (trainer.email && trainer.email.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesFilter = filterSpecialty === 'all' || 
                          trainer.specialties.some(s => s.toLowerCase().includes(filterSpecialty.toLowerCase()));
-    return matchesSearch && matchesFilter;
+    const matchesAvailability = !filterAvailability || 
+                               (trainer.availability && trainer.availability.toLowerCase() === filterAvailability.toLowerCase());
+    return matchesSearch && matchesFilter && matchesAvailability;
   });
 
   return (
@@ -246,34 +270,62 @@ const Trainers = () => {
           onClose={() => setAlert(null)}
         />
       )}
+
+      {/* Error Alert */}
+      {error && (
+        <Alert
+          type="error"
+          message={error}
+        />
+      )}
       
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-black text-white">Trainers Management</h1>
-          <p className="text-gray-400 mt-1">Total Trainers: {trainers.length} • Active: {trainers.filter(t => t.status === 'active').length}</p>
+          <p className="text-gray-400 mt-1">
+            {loading ? 'Loading...' : `Total Trainers: ${trainers.length} • Active: ${trainers.filter(t => t.status === 'active').length}`}
+          </p>
         </div>
         <div className="flex gap-2 mt-4 sm:mt-0">
-          <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
+          <Button 
+            variant="primary" 
+            icon={Plus} 
+            onClick={() => setShowAddModal(true)}
+            disabled={loading}
+          >
             Add Trainer
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Active Trainers</p>
-              <p className="text-2xl font-bold text-white">24</p>
-            </div>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-yellow-400" />
+            <span className="text-gray-300">Loading trainers...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Only show when not loading */}
+      {!loading && (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">Active Trainers</p>
+                  <p className="text-2xl font-bold text-white">{trainers.filter(t => t.status === 'active').length}</p>
+                </div>
             <div className="bg-green-400/20 p-2 rounded">
               <Users className="h-5 w-5 text-green-400" />
             </div>
           </div>
         </div>
-        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+        {/* <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Avg. Rating</p>
@@ -283,8 +335,8 @@ const Trainers = () => {
               <Star className="h-5 w-5 text-yellow-400" />
             </div>
           </div>
-        </div>
-        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+        </div> */}
+        {/* <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Sessions Today</p>
@@ -294,18 +346,7 @@ const Trainers = () => {
               <Clock className="h-5 w-5 text-blue-400" />
             </div>
           </div>
-        </div>
-        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Total Clients</p>
-              <p className="text-2xl font-bold text-white">342</p>
-            </div>
-            <div className="bg-purple-400/20 p-2 rounded">
-              <TrendingUp className="h-5 w-5 text-purple-400" />
-            </div>
-          </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Filters and Search */}
@@ -332,11 +373,15 @@ const Trainers = () => {
                 <option key={specialty} value={specialty}>{specialty}</option>
               ))}
             </select>
-            <select className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400">
-              <option value="">Availability</option>
+            <select 
+              value={filterAvailability}
+              onChange={(e) => setFilterAvailability(e.target.value)}
+              className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+            >
+              <option value="">All Availability</option>
               <option value="full-time">Full-time</option>
               <option value="part-time">Part-time</option>
-              <option value="contract">Contract</option>
+              <option value="flexible">Flexible</option>
             </select>
           </div>
         </div>
@@ -344,7 +389,23 @@ const Trainers = () => {
 
       {/* Trainers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTrainers.map((trainer) => (
+        {filteredTrainers.length === 0 ? (
+          <div className="col-span-full bg-gray-900 rounded-xl border border-gray-800 p-12 text-center">
+            <Users className="h-16 w-16 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-300 mb-2">No trainers found</h3>
+            <p className="text-gray-500 mb-6">
+              {trainers.length === 0 
+                ? "Get started by adding your first trainer to the team." 
+                : "No trainers match your current search criteria."}
+            </p>
+            {trainers.length === 0 && (
+              <Button variant="primary" icon={Plus} onClick={() => setShowAddModal(true)}>
+                Add First Trainer
+              </Button>
+            )}
+          </div>
+        ) : (
+          filteredTrainers.map((trainer) => (
           <div key={trainer.id} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden hover:border-yellow-400/50 transition-all">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
@@ -435,15 +496,10 @@ const Trainers = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="flex gap-2 pt-4 border-t border-gray-800">
-                <button className="flex-1 px-3 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300 transition-colors text-sm font-medium hover:cursor-pointer">
-                  Assign Client
-                </button>
-              </div>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Add Trainer Modal */}
@@ -576,7 +632,7 @@ const Trainers = () => {
                       name="salary"
                       value={formData.salary}
                       onChange={handleInputChange}
-                      placeholder="Amount in Rupees"
+                      placeholder="Amount in ₹"
                       required
                       min='0'
                     />
@@ -602,13 +658,21 @@ const Trainers = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="primary">
-                  Add Trainer
+                <Button 
+                  type="submit" 
+                  variant="primary"
+                  disabled={submitting}
+                  icon={submitting ? Loader2 : null}
+                  iconClassName={submitting ? "animate-spin" : ""}
+                >
+                  {submitting ? 'Adding...' : 'Add Trainer'}
                 </Button>
               </div>
             </form>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

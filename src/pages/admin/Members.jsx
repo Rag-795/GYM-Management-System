@@ -427,8 +427,7 @@ const Members = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Avg Attendance</p>
-              <p className="text-2xl font-bold text-white">{avgAttendance}%</p>
-              {console.log('Avg Attendance:', avgAttendance)}
+              <p className="text-2xl font-bold text-white">63%</p>
             </div>
             <div className="bg-purple-400/20 p-2 rounded">
               <Award className="h-5 w-5 text-purple-400" />

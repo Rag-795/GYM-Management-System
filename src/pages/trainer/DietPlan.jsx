@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Plus, Trash2, Edit, Save, X, Calendar, Users, Search,
-  ChefHat, AlertCircle, CheckCircle, Clock, Info,
-  ChevronDown, ChevronUp, MoreVertical, Copy, Eye,
-  Coffee, Utensils, Apple
+  Plus, Trash2, Edit, Save, X, Users, Search,
+  ChefHat, AlertCircle, CheckCircle, 
+  ChevronDown, ChevronUp, Copy, Info
 } from 'lucide-react';
+import ApiService from '../../services/api';
 
 const DietPlanCreator = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -16,70 +16,52 @@ const DietPlanCreator = () => {
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
   const [expandedPlan, setExpandedPlan] = useState(null);
 
-  // Form state with proper initialization
+  // Form state for real database fields only
   const [formData, setFormData] = useState({
     name: '',
+    type: '',
     description: '',
-    start_date: '',
-    end_date: '',
-    meals: [
-      {
-        id: Date.now(),
-        meal_type: 'breakfast',
-        food_items: '',
-        calories: '',
-        protein: '',
-        carbs: '',
-        fats: ''
-      }
-    ],
+    kcal_count: '',
     assigned_members: []
   });
 
-  // Mock data - Replace with API calls
-  const [availableMembers] = useState([
-    { id: 1, first_name: 'Sarah', last_name: 'Johnson', email: 'sarah.j@email.com', status: 'active' },
-    { id: 2, first_name: 'Mike', last_name: 'Chen', email: 'mike.c@email.com', status: 'active' },
-    { id: 3, first_name: 'Emma', last_name: 'Wilson', email: 'emma.w@email.com', status: 'active' },
-    { id: 4, first_name: 'Alex', last_name: 'Brown', email: 'alex.b@email.com', status: 'inactive' },
-    { id: 5, first_name: 'Lisa', last_name: 'Davis', email: 'lisa.d@email.com', status: 'active' }
-  ]);
+  // Real data from API
+  const [availableMembers, setAvailableMembers] = useState([]);
+  const [existingPlans, setExistingPlans] = useState([]);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  const [existingPlans, setExistingPlans] = useState([
-    {
-      id: 1,
-      name: 'Weight Loss Accelerator',
-      description: 'High-protein, low-carb diet plan for rapid weight loss',
-      start_date: '2024-06-01',
-      end_date: '2024-08-31',
-      total_calories: 1500,
-      total_protein: 120,
-      total_carbs: 100,
-      total_fats: 50,
-      meals: [
-        { id: 1, meal_type: 'breakfast', food_items: 'Oatmeal, Eggs, Fruits', calories: 400, protein: 30, carbs: 40, fats: 12 },
-        { id: 2, meal_type: 'lunch', food_items: 'Grilled Chicken, Salad, Brown Rice', calories: 500, protein: 45, carbs: 35, fats: 15 },
-        { id: 3, meal_type: 'dinner', food_items: 'Salmon, Vegetables, Quinoa', calories: 450, protein: 35, carbs: 20, fats: 18 },
-        { id: 4, meal_type: 'snack', food_items: 'Protein Shake, Nuts', calories: 150, protein: 10, carbs: 5, fats: 5 }
-      ],
-      assigned_members: [
-        { id: 1, name: 'Sarah Johnson' },
-        { id: 3, name: 'Emma Wilson' }
-      ],
-      created_at: '2024-06-01',
-      status: 'active'
-    }
-  ]);
+  // Diet types hardcoded in select options below
 
-  // Meal type options
-  const mealTypes = [
-    { value: 'breakfast', label: 'Breakfast' },
-    { value: 'lunch', label: 'Lunch' },
-    { value: 'dinner', label: 'Dinner' },
-    { value: 'snack', label: 'Snack' },
-    { value: 'pre-workout', label: 'Pre-Workout' },
-    { value: 'post-workout', label: 'Post-Workout' }
-  ];
+  // Load initial data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        setInitialLoading(true);
+        
+        // Load members and diet plans in parallel
+        const [membersResponse, plansResponse] = await Promise.all([
+          ApiService.getAvailableMembers(),
+          ApiService.getDietPlans()
+        ]);
+
+        if (membersResponse.success) {
+          setAvailableMembers(membersResponse.members || []);
+        }
+
+        if (plansResponse.success) {
+          // Use only real database data
+          setExistingPlans(plansResponse.diet_plans || []);
+        }
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        setError('Failed to load data. Please refresh the page.');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -97,20 +79,9 @@ const DietPlanCreator = () => {
   const resetForm = () => {
     setFormData({
       name: '',
+      type: '',
       description: '',
-      start_date: '',
-      end_date: '',
-      meals: [
-        {
-          id: Date.now(),
-          meal_type: 'breakfast',
-          food_items: '',
-          calories: '',
-          protein: '',
-          carbs: '',
-          fats: ''
-        }
-      ],
+      kcal_count: '',
       assigned_members: []
     });
     setEditingPlan(null);
@@ -119,44 +90,7 @@ const DietPlanCreator = () => {
     setShowMemberDropdown(false);
   };
 
-  // Add meal to form
-  const addMeal = () => {
-    setFormData(prev => ({
-      ...prev,
-      meals: [
-        ...prev.meals,
-        {
-          id: Date.now() + Math.random(),
-          meal_type: 'lunch',
-          food_items: '',
-          calories: '',
-          protein: '',
-          carbs: '',
-          fats: ''
-        }
-      ]
-    }));
-  };
-
-  // Remove meal from form
-  const removeMeal = (mealId) => {
-    if (formData.meals.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        meals: prev.meals.filter(meal => meal.id !== mealId)
-      }));
-    }
-  };
-
-  // Update meal in form
-  const updateMeal = (mealId, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      meals: prev.meals.map(meal =>
-        meal.id === mealId ? { ...meal, [field]: value } : meal
-      )
-    }));
-  };
+  // Remove meal-related functions since not supported in schema
 
   // Toggle member selection
   const toggleMemberSelection = (member) => {
@@ -179,18 +113,7 @@ const DietPlanCreator = () => {
     });
   };
 
-  // Calculate totals
-  const calculateTotals = () => {
-    const totals = formData.meals.reduce((acc, meal) => {
-      return {
-        calories: acc.calories + (parseInt(meal.calories) || 0),
-        protein: acc.protein + (parseInt(meal.protein) || 0),
-        carbs: acc.carbs + (parseInt(meal.carbs) || 0),
-        fats: acc.fats + (parseInt(meal.fats) || 0)
-      };
-    }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
-    return totals;
-  };
+  // Remove calculate totals since meals not in schema
 
   // Save diet plan
   const saveDietPlan = async () => {
@@ -199,49 +122,50 @@ const DietPlanCreator = () => {
     
     try {
       // Validate form
-      if (!formData.name || !formData.start_date || !formData.end_date) {
-        setError('Please fill in all required fields');
+      if (!formData.name) {
+        setError('Plan name is required');
         setLoading(false);
         return;
       }
-
-      const totals = calculateTotals();
       
+      // Prepare data for API (using only fields available in schema)
+      const apiData = {
+        name: formData.name,
+        type: formData.type || 'General',
+        description: formData.description,
+        kcal_count: parseInt(formData.kcal_count) || 0,
+        assigned_members: formData.assigned_members
+      };
+      
+      let response;
       if (editingPlan) {
         // Update existing plan
-        setExistingPlans(prev => prev.map(plan =>
-          plan.id === editingPlan.id
-            ? { 
-                ...plan, 
-                ...formData, 
-                total_calories: totals.calories,
-                total_protein: totals.protein,
-                total_carbs: totals.carbs,
-                total_fats: totals.fats
-              }
-            : plan
-        ));
-        setSuccessMessage('Diet plan updated successfully!');
+        response = await ApiService.updateDietPlan(editingPlan.id, apiData);
+        if (response.success) {
+          // Reload plans to get updated data
+          const plansResponse = await ApiService.getDietPlans();
+          if (plansResponse.success) {
+            setExistingPlans(plansResponse.diet_plans || []);
+          }
+          setSuccessMessage('Diet plan updated successfully!');
+        }
       } else {
         // Create new plan
-        const newPlan = {
-          id: Date.now(),
-          ...formData,
-          total_calories: totals.calories,
-          total_protein: totals.protein,
-          total_carbs: totals.carbs,
-          total_fats: totals.fats,
-          created_at: new Date().toISOString().split('T')[0],
-          status: 'active'
-        };
-        setExistingPlans(prev => [newPlan, ...prev]);
-        setSuccessMessage('Diet plan created successfully!');
+        response = await ApiService.createDietPlan(apiData);
+        if (response.success) {
+          setExistingPlans(prev => [response.diet_plan, ...prev]);
+          setSuccessMessage('Diet plan created successfully!');
+        }
+      }
+
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to save diet plan');
       }
       
       resetForm();
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
-      setError('Failed to save diet plan. Please try again.');
+      setError(err.message || 'Failed to save diet plan. Please try again.');
       console.error('Error saving diet plan:', err);
     } finally {
       setLoading(false);
@@ -254,11 +178,16 @@ const DietPlanCreator = () => {
     
     setLoading(true);
     try {
-      setExistingPlans(prev => prev.filter(plan => plan.id !== planId));
-      setSuccessMessage('Diet plan deleted successfully!');
-      setTimeout(() => setSuccessMessage(''), 5000);
+      const response = await ApiService.deleteDietPlan(planId);
+      if (response.success) {
+        setExistingPlans(prev => prev.filter(plan => plan.id !== planId));
+        setSuccessMessage('Diet plan deleted successfully!');
+        setTimeout(() => setSuccessMessage(''), 5000);
+      } else {
+        throw new Error(response.error || 'Failed to delete diet plan');
+      }
     } catch (err) {
-      setError('Failed to delete diet plan');
+      setError(err.message || 'Failed to delete diet plan');
       console.error('Error deleting diet plan:', err);
     } finally {
       setLoading(false);
@@ -269,11 +198,10 @@ const DietPlanCreator = () => {
   const editDietPlan = (plan) => {
     setFormData({
       name: plan.name,
+      type: plan.type || '',
       description: plan.description,
-      start_date: plan.start_date,
-      end_date: plan.end_date,
-      meals: plan.meals.map(meal => ({ ...meal })),
-      assigned_members: plan.assigned_members.map(member => ({ ...member }))
+      kcal_count: plan.kcal_count || '',
+      assigned_members: plan.assigned_members ? plan.assigned_members.map(member => ({ ...member })) : []
     });
     setEditingPlan(plan);
     setIsCreating(true);
@@ -283,13 +211,9 @@ const DietPlanCreator = () => {
   const duplicateDietPlan = (plan) => {
     setFormData({
       name: `${plan.name} (Copy)`,
+      type: plan.type || '',
       description: plan.description,
-      start_date: '',
-      end_date: '',
-      meals: plan.meals.map(meal => ({ 
-        ...meal, 
-        id: Date.now() + Math.random() 
-      })),
+      kcal_count: plan.kcal_count || '',
       assigned_members: []
     });
     setIsCreating(true);
@@ -303,12 +227,21 @@ const DietPlanCreator = () => {
     return fullName.includes(search) || email.includes(search);
   });
 
-  const getMealTypeLabel = (mealType) => {
-    const meal = mealTypes.find(m => m.value === mealType);
-    return meal ? meal.label : mealType;
-  };
+  // Remove meal-related functions since not in schema
 
-  const totals = calculateTotals();
+  // Show loading state while initial data loads
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading diet plans...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
@@ -368,36 +301,56 @@ const DietPlanCreator = () => {
                 placeholder="e.g., Weight Loss Accelerator"
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400"
                 required
-                
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Start Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                  required
-                  
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  End Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                  required
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Diet Type
+              </label>
+              <select
+                value={formData.type || ''}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+              >
+                <option value="">Select type...</option>
+                <option value="Weight Loss">Weight Loss</option>
+                <option value="Muscle Gain">Muscle Gain</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="Athletic Performance">Athletic Performance</option>
+                <option value="Vegetarian">Vegetarian</option>
+                <option value="Vegan">Vegan</option>
+                <option value="Keto">Keto</option>
+                <option value="Low Carb">Low Carb</option>
+                <option value="High Protein">High Protein</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Start Date (Display Only)
+              </label>
+              <input
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+              />
+              <p className="text-xs text-gray-500 mt-1">Note: Dates are for display only and not stored in database</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                End Date (Display Only)
+              </label>
+              <input
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
+              />
+              <p className="text-xs text-gray-500 mt-1">Note: Dates are for display only and not stored in database</p>
             </div>
           </div>
 
@@ -413,134 +366,18 @@ const DietPlanCreator = () => {
             />
           </div>
 
-          {/* Meals Section */}
+          {/* Database Field Notice */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Meals</h3>
-              <button
-                onClick={addMeal}
-                className="px-3 py-1.5 bg-yellow-400 text-black font-medium rounded-lg hover:bg-yellow-300 flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Meal
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {formData.meals.map((meal, index) => (
-                <div key={meal.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Utensils className="h-5 w-5 text-yellow-400" />
-                      <span className="text-white font-medium">Meal {index + 1}</span>
-                    </div>
-                    {formData.meals.length > 1 && (
-                      <button
-                        onClick={() => removeMeal(meal.id)}
-                        className="p-1 hover:bg-gray-700 rounded transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-400" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">Meal Type</label>
-                      <select
-                        value={meal.meal_type}
-                        onChange={(e) => updateMeal(meal.id, 'meal_type', e.target.value)}
-                        className="w-full px-3 py-1.5 bg-gray-900 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-yellow-400"
-                      >
-                        {mealTypes.map(type => (
-                          <option key={type.value} value={type.value}>{type.label}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="lg:col-span-2">
-                      <label className="block text-xs text-gray-400 mb-1">Food Items</label>
-                      <input
-                        type="text"
-                        value={meal.food_items}
-                        onChange={(e) => updateMeal(meal.id, 'food_items', e.target.value)}
-                        placeholder="e.g., Oatmeal, Eggs, Fruits"
-                        className="w-full px-3 py-1.5 bg-gray-900 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">Calories</label>
-                      <input
-                        type="number"
-                        value={meal.calories}
-                        onChange={(e) => updateMeal(meal.id, 'calories', e.target.value)}
-                        placeholder="kcal"
-                        className="w-full px-3 py-1.5 bg-gray-900 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                        min={0}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">Protein (g)</label>
-                      <input
-                        type="number"
-                        value={meal.protein}
-                        onChange={(e) => updateMeal(meal.id, 'protein', e.target.value)}
-                        placeholder="grams"
-                        className="w-full px-3 py-1.5 bg-gray-900 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                        min={0}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">Carbs (g)</label>
-                      <input
-                        type="number"
-                        value={meal.carbs}
-                        onChange={(e) => updateMeal(meal.id, 'carbs', e.target.value)}
-                        placeholder="grams"
-                        className="w-full px-3 py-1.5 bg-gray-900 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                        min={0}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">Fats (g)</label>
-                      <input
-                        type="number"
-                        value={meal.fats}
-                        onChange={(e) => updateMeal(meal.id, 'fats', e.target.value)}
-                        placeholder="grams"
-                        className="w-full px-3 py-1.5 bg-gray-900 border border-gray-600 rounded text-white text-sm placeholder-gray-500 focus:outline-none focus:border-yellow-400"
-                        min={0}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Totals Summary */}
-            <div className="mt-4 p-4 bg-yellow-900/20 border border-yellow-400/20 rounded-lg">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Total Calories</p>
-                  <p className="text-lg font-bold text-yellow-400">{totals.calories} kcal</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Total Protein</p>
-                  <p className="text-lg font-bold text-white">{totals.protein}g</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Total Carbs</p>
-                  <p className="text-lg font-bold text-white">{totals.carbs}g</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Total Fats</p>
-                  <p className="text-lg font-bold text-white">{totals.fats}g</p>
-                </div>
-              </div>
+            <div className="p-4 bg-blue-900/20 border border-blue-400/20 rounded-lg">
+              <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                <Info className="h-5 w-5 text-blue-400" />
+                Diet Plan Information
+              </h3>
+              <p className="text-gray-300 text-sm">
+                Note: The current database schema supports basic diet plan information. 
+                Detailed meal planning features are not available. You can create diet plans 
+                with name, type, description, and total calorie count only.
+              </p>
             </div>
           </div>
 
@@ -728,22 +565,22 @@ const DietPlanCreator = () => {
                 {/* Plan Info */}
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-400">Duration:</span>
+                    <span className="text-gray-400">Created:</span>
                     <p className="text-white font-medium">
-                      {plan.start_date} to {plan.end_date}
+                      {plan.created_at ? new Date(plan.created_at).toLocaleDateString() : 'Unknown'}
                     </p>
                   </div>
                   <div>
                     <span className="text-gray-400">Total Calories:</span>
-                    <p className="text-yellow-400 font-semibold">{plan.total_calories} kcal</p>
+                    <p className="text-yellow-400 font-semibold">{plan.kcal_count || 0} kcal</p>
                   </div>
                   <div>
-                    <span className="text-gray-400">Meals:</span>
-                    <p className="text-white font-medium">{plan.meals.length} meals</p>
+                    <span className="text-gray-400">Type:</span>
+                    <p className="text-white font-medium">{plan.type || 'General'}</p>
                   </div>
                   <div>
                     <span className="text-gray-400">Members:</span>
-                    <p className="text-white font-medium">{plan.assigned_members.length} assigned</p>
+                    <p className="text-white font-medium">{plan.assigned_members?.length || 0} assigned</p>
                   </div>
                   <div>
                     <span className="text-gray-400">Status:</span>
@@ -770,55 +607,22 @@ const DietPlanCreator = () => {
                 )}
               </div>
 
-              {/* Expanded Meal Details */}
+              {/* Expanded Plan Details */}
               {expandedPlan === plan.id && (
                 <div className="border-t border-gray-700 p-4 bg-gray-900/50">
-                  <h4 className="text-sm font-semibold text-white mb-3">Meal Breakdown</h4>
-                  <div className="space-y-2">
-                    {plan.meals.map((meal) => (
-                      <div key={meal.id} className="flex items-center gap-3 p-2 bg-gray-800 rounded">
-                        <Utensils className="h-4 w-4 text-yellow-400" />
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
-                          <div>
-                            <span className="text-gray-400 text-xs">Type:</span>
-                            <p className="text-white capitalize">{getMealTypeLabel(meal.meal_type)}</p>
-                          </div>
-                          <div className="md:col-span-2">
-                            <span className="text-gray-400 text-xs">Food Items:</span>
-                            <p className="text-white">{meal.food_items}</p>
-                          </div>
-                          <div>
-                            <span className="text-gray-400 text-xs">Calories:</span>
-                            <p className="text-yellow-400 font-medium">{meal.calories} kcal</p>
-                          </div>
-                          <div>
-                            <span className="text-gray-400 text-xs">Macros (P/C/F):</span>
-                            <p className="text-white">{meal.protein}g / {meal.carbs}g / {meal.fats}g</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Totals Summary */}
-                  <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-400/20 rounded-lg">
-                    <div className="grid grid-cols-4 gap-2 text-center text-sm">
-                      <div>
-                        <p className="text-xs text-gray-400">Total Cal</p>
-                        <p className="font-bold text-yellow-400">{plan.total_calories}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Protein</p>
-                        <p className="font-bold text-white">{plan.total_protein}g</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Carbs</p>
-                        <p className="font-bold text-white">{plan.total_carbs}g</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Fats</p>
-                        <p className="font-bold text-white">{plan.total_fats}g</p>
-                      </div>
+                  <h4 className="text-sm font-semibold text-white mb-3">Diet Plan Details</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-gray-400 text-xs">Full Description:</span>
+                      <p className="text-white mt-1">{plan.description || 'No description provided'}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-xs">Total Calories:</span>
+                      <p className="text-yellow-400 font-medium">{plan.kcal_count} kcal</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 text-xs">Created:</span>
+                      <p className="text-white">{new Date(plan.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
                 </div>

@@ -27,6 +27,7 @@ def create_app(config_name=None):
     # Configure CORS
     CORS(app, origins=app.config['CORS_ORIGINS'])
     
+    
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(trainer_bp)
