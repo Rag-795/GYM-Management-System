@@ -379,9 +379,9 @@ def main():
         db.create_all()
 
         roles = {
-            "ADMIN": "ef407cc9-6c3a-4cef-a4dd-9fa86b97184b",
-            "TRAINER": "fd0befa5-67be-4bfc-a50a-63d0897b113e",
-            "MEMBER": "a0dfb50f-ffe9-4dd0-ab63-2bc0c4c15d56"
+            "ADMIN": "13d174c9-4f00-46b7-8710-626744681f6e",
+            "TRAINER": "d22accc4-dbec-45fd-b44d-7072c571b85c",
+            "MEMBER": "cbe0d3e4-860b-4852-a95c-b32f17067a6d"
         }
         
         # Create membership plans

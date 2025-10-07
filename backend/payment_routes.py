@@ -17,6 +17,16 @@ def get_current_user():
         return None
     return User.query.get(current_user_id)
 
+def get_member_profile(user):
+    """Safely get member profile from user (handles backref list issue)"""
+    if not user:
+        return None
+    profile = user.member_profile
+    # member_profile is a list due to backref, get first item
+    if isinstance(profile, list):
+        return profile[0] if profile else None
+    return profile
+
 def is_admin(user):
     """Check if user has admin role"""
     if not user or not user.role:
@@ -27,7 +37,7 @@ def is_admin(user):
 
 def is_member(user):
     """Check if user has member role"""
-    return user and user.role and user.role.name == 'MEMBER'
+    return user and user.role and user.role.name.lower() == 'member'
 
 @payment_bp.route('/', methods=['GET'])
 @jwt_required()
@@ -55,8 +65,9 @@ def get_payments():
         # Apply role-based filtering
         if is_member(current_user):
             # Members can only see their own payments
-            if current_user.member_profile:
-                query = query.filter(Payment.member_id == current_user.member_profile.id)
+            member_profile = get_member_profile(current_user)
+            if member_profile:
+                query = query.filter(Payment.member_id == member_profile.id)
             else:
                 return jsonify({'error': 'Member profile not found'}), 404
         elif not is_admin(current_user):
@@ -237,7 +248,8 @@ def get_payment_details(payment_id):
         
         # Check permissions
         if is_member(current_user):
-            if not current_user.member_profile or str(payment.member_id) != str(current_user.member_profile.id):
+            member_profile = get_member_profile(current_user)
+            if not member_profile or str(payment.member_id) != str(member_profile.id):
                 return jsonify({'error': 'Access denied'}), 403
         elif not is_admin(current_user):
             return jsonify({'error': 'Insufficient permissions'}), 403

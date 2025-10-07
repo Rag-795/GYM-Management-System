@@ -25,7 +25,7 @@ def is_admin(user):
 
 def is_trainer(user):
     """Check if user has trainer role"""
-    return user and user.role and user.role.name == 'TRAINER'
+    return user and user.role and user.role.name.lower() == 'trainer'
 
 @equipment_bp.route('/', methods=['GET'])
 @jwt_required()

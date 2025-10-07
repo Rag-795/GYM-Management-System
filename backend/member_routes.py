@@ -19,6 +19,16 @@ def get_current_user():
         return None
     return User.query.get(current_user_id)
 
+def get_member_profile(user):
+    """Safely get member profile from user (handles backref list issue)"""
+    if not user:
+        return None
+    profile = user.member_profile
+    # member_profile is a list due to backref, get first item
+    if isinstance(profile, list):
+        return profile[0] if profile else None
+    return profile
+
 def is_admin(user):
     """Check if user has admin role"""
     if not user or not user.role:
@@ -218,10 +228,11 @@ def get_member(member_id):
         if not member:
             return jsonify({'error': 'Member not found'}), 404
         
-        # Check permissions
-        is_same_member = (current_user.role.name == 'MEMBER' and 
-                         current_user.member_profile and 
-                         str(current_user.member_profile.id) == member_id)
+        # Check permissions (role names in DB are lowercase: 'member', 'trainer', 'admin')
+        member_profile = get_member_profile(current_user)
+        is_same_member = (current_user.role.name.lower() == 'member' and 
+                         member_profile and 
+                         str(member_profile.id) == member_id)
         
         if not (is_admin(current_user) or is_same_member):
             return jsonify({'error': 'Insufficient permissions'}), 403
@@ -263,9 +274,35 @@ def get_member(member_id):
             'bmi': float(metric.bmi) if metric.bmi else None
         } for metric in metrics]
         
+        # Get workout plans assigned to member
+        member_dict['workout_plans'] = [{
+            'id': str(plan.id),
+            'name': plan.name,
+            'type': plan.type,
+            'description': plan.description,
+            'created_by': str(plan.created_by) if plan.created_by else None,
+            'trainer_name': f"{plan.trainer.first_name} {plan.trainer.last_name}" if plan.trainer else None,
+            'created_at': plan.created_at.isoformat() if plan.created_at else None
+        } for plan in member.workout_plans] if member.workout_plans else []
+        
+        # Get diet plans assigned to member
+        member_dict['diet_plans'] = [{
+            'id': str(plan.id),
+            'name': plan.name,
+            'type': plan.type,
+            'description': plan.description,
+            'kcal_count': plan.kcal_count,
+            'created_by': str(plan.created_by) if plan.created_by else None,
+            'trainer_name': f"{plan.trainer.first_name} {plan.trainer.last_name}" if plan.trainer else None,
+            'created_at': plan.created_at.isoformat() if plan.created_at else None
+        } for plan in member.diet_plans] if member.diet_plans else []
+        
         return jsonify({'member': member_dict}), 200
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Error in get_member: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @member_bp.route('/', methods=['POST'])
@@ -432,9 +469,10 @@ def update_member(member_id):
             return jsonify({'error': 'Member not found'}), 404
         
         # Check permissions
-        is_same_member = (current_user.role.name == 'MEMBER' and 
-                         current_user.member_profile and 
-                         str(current_user.member_profile.id) == member_id)
+        member_profile = get_member_profile(current_user)
+        is_same_member = (current_user.role.name.lower() == 'member' and 
+                         member_profile and 
+                         str(member_profile.id) == member_id)
         
         if not (is_admin(current_user) or is_same_member):
             return jsonify({'error': 'Insufficient permissions'}), 403
@@ -642,11 +680,12 @@ def add_physical_metrics(member_id):
             return jsonify({'error': 'Member not found'}), 404
         
         # Check permissions
-        is_same_member = (current_user.role.name == 'MEMBER' and 
-                         current_user.member_profile and 
-                         str(current_user.member_profile.id) == member_id)
+        member_profile = get_member_profile(current_user)
+        is_same_member = (current_user.role.name.lower() == 'member' and 
+                         member_profile and 
+                         str(member_profile.id) == member_id)
         
-        if not (is_admin(current_user) or current_user.role.name == 'TRAINER' or is_same_member):
+        if not (is_admin(current_user) or current_user.role.name.lower() == 'trainer' or is_same_member):
             return jsonify({'error': 'Insufficient permissions'}), 403
         
         data = request.get_json()

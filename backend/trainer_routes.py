@@ -13,6 +13,16 @@ def get_current_user():
         return None
     return User.query.get(current_user_id)
 
+def get_trainer_profile(user):
+    """Safely get trainer profile from user (handles backref list issue)"""
+    if not user:
+        return None
+    profile = user.trainer_profile
+    # trainer_profile is a list due to backref, get first item
+    if isinstance(profile, list):
+        return profile[0] if profile else None
+    return profile
+
 def is_admin(user):
     """Check if user has admin role"""
     if not user or not user.role:
@@ -30,8 +40,8 @@ def get_trainers():
         if not current_user:
             return jsonify({'error': 'User not found'}), 404
         
-        # Admin can see all trainers, trainers can see themselves and other trainers
-        if not (is_admin(current_user) or current_user.role.name == 'TRAINER'):
+        # Admin can see all trainers, trainers can see themselves and other trainers (case-insensitive)
+        if not (is_admin(current_user) or current_user.role.name.lower() == 'trainer'):
             return jsonify({'error': 'Insufficient permissions'}), 403
         
         trainers = Trainer.query.filter_by(is_active=True).all()
@@ -112,9 +122,10 @@ def get_trainer(trainer_id):
             return jsonify({'error': 'Trainer not found'}), 404
         
         # Check permissions
-        is_same_trainer = (current_user.role.name == 'TRAINER' and 
-                          current_user.trainer_profile and 
-                          str(current_user.trainer_profile.id) == trainer_id)
+        trainer_profile = get_trainer_profile(current_user)
+        is_same_trainer = (current_user.role.name.lower() == 'trainer' and 
+                          trainer_profile and 
+                          str(trainer_profile.id) == trainer_id)
         
         if not (is_admin(current_user) or is_same_trainer):
             return jsonify({'error': 'Insufficient permissions'}), 403
@@ -144,9 +155,10 @@ def update_trainer(trainer_id):
             return jsonify({'error': 'Trainer not found'}), 404
         
         # Check permissions
-        is_same_trainer = (current_user.role.name == 'TRAINER' and 
-                          current_user.trainer_profile and 
-                          str(current_user.trainer_profile.id) == trainer_id)
+        trainer_profile = get_trainer_profile(current_user)
+        is_same_trainer = (current_user.role.name.lower() == 'trainer' and 
+                          trainer_profile and 
+                          str(trainer_profile.id) == trainer_id)
         
         if not (is_admin(current_user) or is_same_trainer):
             return jsonify({'error': 'Insufficient permissions'}), 403
