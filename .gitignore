@@ -15,7 +15,7 @@ dist-ssr
 /dbms 
 /backend/__pycache__/
 /backend/.venv/
-/.github
+/.github/
 
 .env
 .env.local

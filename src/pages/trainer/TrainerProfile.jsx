@@ -409,7 +409,7 @@ const TrainerProfile = () => {
       </div>
 
       {/* Trainer Stats Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <Users className="h-5 w-5 text-yellow-400" />
@@ -463,7 +463,7 @@ const TrainerProfile = () => {
           <p className="text-2xl font-bold text-white">{stats.avg_client_progress}%</p>
           <p className="text-xs text-gray-400">Avg Progress</p>
         </div>
-      </div>
+      </div> */}
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-4 mb-6">
@@ -491,7 +491,7 @@ const TrainerProfile = () => {
       </div>
 
       {/* Assigned Members Section */}
-      <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+      {/* <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-yellow-400" />
@@ -500,10 +500,10 @@ const TrainerProfile = () => {
           <span className="text-sm text-gray-400">
             {assignedMembers.filter(m => m.status === 'active').length} active of {assignedMembers.length} total
           </span>
-        </div>
+        </div> */}
 
         {/* Members Table */}
-        <div className="overflow-x-auto">
+        {/* <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="text-left text-sm text-gray-400 border-b border-gray-800">
@@ -568,10 +568,10 @@ const TrainerProfile = () => {
               ))}
             </tbody>
           </table>
-        </div>
+        </div> */}
 
         {/* Next Sessions Summary */}
-        <div className="mt-6 pt-6 border-t border-gray-800">
+        {/* <div className="mt-6 pt-6 border-t border-gray-800">
           <h3 className="text-sm font-semibold text-gray-400 mb-3">Upcoming Sessions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {assignedMembers
@@ -587,8 +587,8 @@ const TrainerProfile = () => {
                 </div>
               ))}
           </div>
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
     </div>
   );
 };

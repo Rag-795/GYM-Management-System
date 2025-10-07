@@ -9,6 +9,8 @@ from membership_routes import membership_bp
 from equipment_routes import equipment_bp
 from attendance_routes import attendance_bp
 from payment_routes import payment_bp
+from diet_routes import diet_bp
+from workout_routes import workout_bp
 from config import config
 import os
 from datetime import datetime, timezone
@@ -35,6 +37,8 @@ def create_app(config_name=None):
     app.register_blueprint(equipment_bp)
     app.register_blueprint(attendance_bp)
     app.register_blueprint(payment_bp)
+    app.register_blueprint(diet_bp)
+    app.register_blueprint(workout_bp)
     
     # JWT error handlers
     @jwt.expired_token_loader

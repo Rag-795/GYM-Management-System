@@ -45,6 +45,38 @@ def is_admin(user):
 
 def is_trainer(user):
     """Check if user has trainer role"""
+    if not user or not user.role:
+        return False
+    # Handle both uppercase and lowercase role names
+    role_name = user.role.name.upper() if user.role.name else ''
+    return role_name == 'TRAINER'
+
+def is_member(user):
+    """Check if user has member role"""
+    if not user or not user.role:
+        return False
+    # Handle both uppercase and lowercase role names
+    role_name = user.role.name.upper() if user.role.name else ''
+    return role_name == 'MEMBER'
+
+def is_trainer(user):
+    """Check if user has trainer role"""
+    if not user or not user.role:
+        return False
+    # Handle both uppercase and lowercase role names
+    role_name = user.role.name.upper() if user.role.name else ''
+    return role_name == 'TRAINER'
+
+def is_member(user):
+    """Check if user has member role"""
+    if not user or not user.role:
+        return False
+    # Handle both uppercase and lowercase role names
+    role_name = user.role.name.upper() if user.role.name else ''
+    return role_name == 'MEMBER'
+
+def is_trainer(user):
+    """Check if user has trainer role"""
     return user and user.role and user.role.name.lower() == 'trainer'
 
 def is_member(user):

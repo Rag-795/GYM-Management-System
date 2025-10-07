@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import (
     db, Member, User, Role, MemberPhone, Address, MemberMembership, 
-    MembershipPlan, PhysicalMetric, Attendance, Payment
+    MembershipPlan, PhysicalMetric, Attendance, Payment, Trainer,
+    WorkoutPlan, DietPlan, member_workout_assoc, member_diet_assoc
 )
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func, desc
@@ -36,6 +37,14 @@ def is_admin(user):
     # Handle both uppercase and lowercase role names
     role_name = user.role.name.upper() if user.role.name else ''
     return role_name == 'ADMIN'
+
+def is_trainer(user):
+    """Check if user has trainer role"""
+    if not user or not user.role:
+        return False
+    # Handle both uppercase and lowercase role names
+    role_name = user.role.name.upper() if user.role.name else ''
+    return role_name == 'TRAINER'
 
 def validate_email(email):
     """Validate email format"""
@@ -115,9 +124,9 @@ def get_members():
         # Debug logging
         print(f"DEBUG: User {current_user.email} with role '{current_user.role.name if current_user.role else 'None'}' accessing members")
         
-        # Only admins can view all members
-        if not is_admin(current_user):
-            return jsonify({'error': 'Admin access required'}), 403
+        # Check permissions - admins can view all members, trainers can view their assigned members
+        if not (is_admin(current_user) or is_trainer(current_user)):
+            return jsonify({'error': 'Admin or trainer access required'}), 403
         
         # Get query parameters
         search = request.args.get('search', '').strip()
@@ -128,6 +137,13 @@ def get_members():
         
         # Build query
         query = db.session.query(Member).join(User)
+        
+        # For trainers, show all active members (they can work with any member)
+        # Note: In the current schema, there's no direct trainer-member assignment
+        # Trainers can view all members to assign workout/diet plans or track attendance
+        if is_trainer(current_user):
+            # Trainers can see all active members
+            query = query.filter(Member.is_active == True)
         
         # Apply search filter
         if search:
