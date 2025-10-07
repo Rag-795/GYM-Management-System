@@ -117,7 +117,7 @@ class ApiService {
     });
   }
 
-  async getAttendanceStats() {
+  async getOverallAttendanceStats() {
     return this.request('/api/attendance/overall-stats', {
       method: 'GET',
     });
@@ -324,6 +324,108 @@ class ApiService {
 
   async getPaymentModes() {
     return this.request('/api/payments/modes', {
+      method: 'GET',
+    });
+  }
+
+  // Diet Plan endpoints
+  async getDietPlans(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/diet-plans/?${queryString}` : '/api/diet-plans/';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async getDietPlan(planId) {
+    return this.request(`/api/diet-plans/${planId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createDietPlan(planData) {
+    return this.request('/api/diet-plans/', {
+      method: 'POST',
+      body: JSON.stringify(planData),
+    });
+  }
+
+  async updateDietPlan(planId, planData) {
+    return this.request(`/api/diet-plans/${planId}`, {
+      method: 'PUT',
+      body: JSON.stringify(planData),
+    });
+  }
+
+  async deleteDietPlan(planId) {
+    return this.request(`/api/diet-plans/${planId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAvailableMembers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/diet-plans/members?${queryString}` : '/api/diet-plans/members';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async getDietPlanTypes() {
+    return this.request('/api/diet-plans/types', {
+      method: 'GET',
+    });
+  }
+
+  async getDietPlanStatistics() {
+    return this.request('/api/diet-plans/statistics', {
+      method: 'GET',
+    });
+  }
+
+  // Workout Plan endpoints
+  async getWorkoutPlans(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/api/workout-plans/?${queryString}` : '/api/workout-plans/';
+    return this.request(endpoint, {
+      method: 'GET',
+    });
+  }
+
+  async getWorkoutPlan(planId) {
+    return this.request(`/api/workout-plans/${planId}`, {
+      method: 'GET',
+    });
+  }
+
+  async createWorkoutPlan(planData) {
+    return this.request('/api/workout-plans/', {
+      method: 'POST',
+      body: JSON.stringify(planData),
+    });
+  }
+
+  async updateWorkoutPlan(planId, planData) {
+    return this.request(`/api/workout-plans/${planId}`, {
+      method: 'PUT',
+      body: JSON.stringify(planData),
+    });
+  }
+
+  async deleteWorkoutPlan(planId) {
+    return this.request(`/api/workout-plans/${planId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getWorkoutPlanTypes() {
+    return this.request('/api/workout-plans/types', {
+      method: 'GET',
+    });
+  }
+
+  async getWorkoutPlanStatistics() {
+    return this.request('/api/workout-plans/statistics', {
       method: 'GET',
     });
   }

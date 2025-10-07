@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus, Trash2, Edit, Save, X, Calendar, Users, Search,
-  Dumbbell, AlertCircle, CheckCircle, Clock, Info,
+  Dumbbell, AlertCircle, CheckCircle, Clock, Info, AlertTriangle,
   ChevronDown, ChevronUp, MoreVertical, Copy, Eye,
   Activity, Target, Timer, Zap, TrendingUp, Hash
 } from 'lucide-react';
+import ApiService from '../../services/api';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 const WorkoutPlanCreator = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -20,8 +22,6 @@ const WorkoutPlanCreator = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    start_date: '',
-    end_date: '',
     exercises: [
       {
         id: Date.now(),
@@ -37,92 +37,11 @@ const WorkoutPlanCreator = () => {
     assigned_members: []
   });
 
-  // Mock data - Replace with API calls
-  const [availableMembers] = useState([
-    { id: 1, first_name: 'Sarah', last_name: 'Johnson', email: 'sarah.j@email.com', status: 'active' },
-    { id: 2, first_name: 'Mike', last_name: 'Chen', email: 'mike.c@email.com', status: 'active' },
-    { id: 3, first_name: 'Emma', last_name: 'Wilson', email: 'emma.w@email.com', status: 'active' },
-    { id: 4, first_name: 'Alex', last_name: 'Brown', email: 'alex.b@email.com', status: 'inactive' },
-    { id: 5, first_name: 'Lisa', last_name: 'Davis', email: 'lisa.d@email.com', status: 'active' },
-    { id: 6, first_name: 'Tom', last_name: 'Miller', email: 'tom.m@email.com', status: 'active' },
-    { id: 7, first_name: 'Jane', last_name: 'Smith', email: 'jane.s@email.com', status: 'active' }
-  ]);
+  // Real data from API
+  const [availableMembers, setAvailableMembers] = useState([]);
 
-  const [existingPlans, setExistingPlans] = useState([
-    {
-      id: 1,
-      name: 'Beginner Strength Training',
-      description: 'Full body workout plan for beginners focusing on fundamental movements',
-      start_date: '2024-06-01',
-      end_date: '2024-08-31',
-      total_exercises: 6,
-      total_sets: 18,
-      total_duration: '45 min',
-      exercises: [
-        { id: 1, exercise_name: 'Squats', exercise_type: 'strength', sets: 3, reps: 12, duration: '', rest_time: '60s', notes: 'Focus on form' },
-        { id: 2, exercise_name: 'Push-ups', exercise_type: 'strength', sets: 3, reps: 10, duration: '', rest_time: '45s', notes: 'Modify on knees if needed' },
-        { id: 3, exercise_name: 'Lunges', exercise_type: 'strength', sets: 3, reps: 10, duration: '', rest_time: '60s', notes: 'Alternate legs' },
-        { id: 4, exercise_name: 'Plank', exercise_type: 'core', sets: 3, reps: '', duration: '30s', rest_time: '30s', notes: 'Keep core tight' },
-        { id: 5, exercise_name: 'Dumbbell Rows', exercise_type: 'strength', sets: 3, reps: 12, duration: '', rest_time: '60s', notes: 'Light weight to start' },
-        { id: 6, exercise_name: 'Shoulder Press', exercise_type: 'strength', sets: 3, reps: 10, duration: '', rest_time: '60s', notes: 'Control the movement' }
-      ],
-      assigned_members: [
-        { id: 1, name: 'Sarah Johnson' },
-        { id: 3, name: 'Emma Wilson' }
-      ],
-      created_at: '2024-06-01',
-      status: 'active'
-    },
-    {
-      id: 2,
-      name: 'Advanced HIIT Program',
-      description: 'High-intensity interval training for experienced athletes',
-      start_date: '2024-06-15',
-      end_date: '2024-09-15',
-      total_exercises: 8,
-      total_sets: 24,
-      total_duration: '60 min',
-      exercises: [
-        { id: 1, exercise_name: 'Burpees', exercise_type: 'cardio', sets: 4, reps: 15, duration: '', rest_time: '30s', notes: 'Full intensity' },
-        { id: 2, exercise_name: 'Box Jumps', exercise_type: 'plyometric', sets: 3, reps: 10, duration: '', rest_time: '45s', notes: '24-inch box' },
-        { id: 3, exercise_name: 'Battle Ropes', exercise_type: 'cardio', sets: 3, reps: '', duration: '45s', rest_time: '30s', notes: 'Alternating waves' },
-        { id: 4, exercise_name: 'Medicine Ball Slams', exercise_type: 'power', sets: 3, reps: 12, duration: '', rest_time: '30s', notes: '20lb ball' },
-        { id: 5, exercise_name: 'Sprint Intervals', exercise_type: 'cardio', sets: 3, reps: '', duration: '30s', rest_time: '60s', notes: 'Max effort' },
-        { id: 6, exercise_name: 'Pull-ups', exercise_type: 'strength', sets: 3, reps: 8, duration: '', rest_time: '60s', notes: 'Use assistance if needed' },
-        { id: 7, exercise_name: 'Kettlebell Swings', exercise_type: 'power', sets: 3, reps: 20, duration: '', rest_time: '45s', notes: 'Hip drive focus' },
-        { id: 8, exercise_name: 'Mountain Climbers', exercise_type: 'cardio', sets: 3, reps: '', duration: '45s', rest_time: '30s', notes: 'Fast pace' }
-      ],
-      assigned_members: [
-        { id: 2, name: 'Mike Chen' },
-        { id: 4, name: 'Alex Brown' },
-        { id: 6, name: 'Tom Miller' }
-      ],
-      created_at: '2024-06-15',
-      status: 'active'
-    },
-    {
-      id: 3,
-      name: 'Flexibility & Mobility',
-      description: 'Yoga and stretching routine for improved flexibility',
-      start_date: '2024-05-01',
-      end_date: '2024-07-31',
-      total_exercises: 5,
-      total_sets: 15,
-      total_duration: '30 min',
-      exercises: [
-        { id: 1, exercise_name: 'Sun Salutations', exercise_type: 'flexibility', sets: 3, reps: 5, duration: '', rest_time: '30s', notes: 'Flow smoothly' },
-        { id: 2, exercise_name: 'Hamstring Stretch', exercise_type: 'flexibility', sets: 3, reps: '', duration: '60s', rest_time: '15s', notes: 'Each leg' },
-        { id: 3, exercise_name: 'Hip Flexor Stretch', exercise_type: 'flexibility', sets: 3, reps: '', duration: '45s', rest_time: '15s', notes: 'Each side' },
-        { id: 4, exercise_name: 'Shoulder Rolls', exercise_type: 'mobility', sets: 3, reps: 15, duration: '', rest_time: '20s', notes: 'Both directions' },
-        { id: 5, exercise_name: 'Cat-Cow Stretch', exercise_type: 'flexibility', sets: 3, reps: 10, duration: '', rest_time: '20s', notes: 'Slow and controlled' }
-      ],
-      assigned_members: [
-        { id: 5, name: 'Lisa Davis' }
-      ],
-      created_at: '2024-05-01',
-      status: 'active'
-    }
-  ]);
+  // Workout plans state
+  const [existingPlans, setExistingPlans] = useState([]);
 
   // Exercise type options
   const exerciseTypes = [
@@ -135,6 +54,60 @@ const WorkoutPlanCreator = () => {
     { value: 'mobility', label: 'Mobility' },
     { value: 'balance', label: 'Balance' }
   ];
+
+  // Fetch workout plans and members on component mount
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = localStorage.getItem('authToken');
+    const userRole = localStorage.getItem('userRole');
+    console.log('Auth check - Token:', token ? 'Present' : 'Missing');
+    console.log('Auth check - Role:', userRole);
+    
+    if (!token) {
+      setError('Not authenticated. Please log in.');
+      return;
+    }
+    
+    fetchWorkoutPlans();
+    fetchMembers();
+  }, []);
+
+  const fetchWorkoutPlans = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching workout plans...');
+      const response = await ApiService.getWorkoutPlans();
+      console.log('Workout plans response:', response);
+      
+      // Handle both direct array and response with workout_plans property
+      const plans = response?.workout_plans || response || [];
+      setExistingPlans(Array.isArray(plans) ? plans : []);
+      console.log('Set workout plans:', plans);
+    } catch (error) {
+      console.error('Error fetching workout plans:', error);
+      setError(`Failed to load workout plans: ${error.message}`);
+      setExistingPlans([]); // Ensure it's always an array
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMembers = async () => {
+    try {
+      console.log('Fetching members...');
+      const response = await ApiService.getMembers();
+      console.log('Members response:', response);
+      
+      // Handle both direct array and response with members property
+      const members = response?.members || response || [];
+      setAvailableMembers(Array.isArray(members) ? members : []);
+      console.log('Set available members:', members);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      setError(`Failed to load members: ${error.message}`);
+      setAvailableMembers([]); // Ensure it's always an array
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -153,8 +126,6 @@ const WorkoutPlanCreator = () => {
     setFormData({
       name: '',
       description: '',
-      start_date: '',
-      end_date: '',
       exercises: [
         {
           id: Date.now(),
@@ -197,16 +168,18 @@ const WorkoutPlanCreator = () => {
 
   // Remove exercise from form
   const removeExercise = (exerciseId) => {
-    if (formData.exercises.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        exercises: prev.exercises.filter(exercise => exercise.id !== exerciseId)
-      }));
-    }
+    if (!formData.exercises || formData.exercises.length <= 1) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      exercises: prev.exercises.filter(exercise => exercise.id !== exerciseId)
+    }));
   };
 
   // Update exercise in form
   const updateExercise = (exerciseId, field, value) => {
+    if (!formData.exercises) return;
+    
     setFormData(prev => ({
       ...prev,
       exercises: prev.exercises.map(exercise =>
@@ -217,8 +190,13 @@ const WorkoutPlanCreator = () => {
 
   // Toggle member selection
   const toggleMemberSelection = (member) => {
+    if (!member || !member.id || !member.first_name || !member.last_name) {
+      console.error('Invalid member data:', member);
+      return;
+    }
+    
     setFormData(prev => {
-      const isSelected = prev.assigned_members.some(m => m.id === member.id);
+      const isSelected = prev.assigned_members?.some(m => m.id === member.id) || false;
       if (isSelected) {
         return {
           ...prev,
@@ -227,9 +205,10 @@ const WorkoutPlanCreator = () => {
       } else {
         return {
           ...prev,
-          assigned_members: [...prev.assigned_members, { 
+          assigned_members: [...(prev.assigned_members || []), { 
             id: member.id, 
-            name: `${member.first_name} ${member.last_name}` 
+            first_name: member.first_name,
+            last_name: member.last_name
           }]
         };
       }
@@ -238,6 +217,10 @@ const WorkoutPlanCreator = () => {
 
   // Calculate totals
   const calculateTotals = () => {
+    if (!formData.exercises || !Array.isArray(formData.exercises)) {
+      return { sets: 0, reps: 0, exercises: 0 };
+    }
+    
     const totals = formData.exercises.reduce((acc, exercise) => {
       return {
         sets: acc.sets + (parseInt(exercise.sets) || 0),
@@ -255,38 +238,30 @@ const WorkoutPlanCreator = () => {
     
     try {
       // Validate form
-      if (!formData.name || !formData.start_date || !formData.end_date) {
-        setError('Please fill in all required fields');
+      if (!formData.name || !formData.description) {
+        setError('Please fill in name and description');
         setLoading(false);
         return;
       }
 
-      const totals = calculateTotals();
+      // Prepare workout plan data based on schema constraints
+      const workoutPlanData = {
+        name: formData.name,
+        type: formData.exercises.length > 0 ? formData.exercises[0].exercise_type : 'strength',
+        description: formData.description,
+        member_ids: formData.assigned_members.map(member => member.id)
+      };
       
       if (editingPlan) {
         // Update existing plan
-        setExistingPlans(prev => prev.map(plan =>
-          plan.id === editingPlan.id
-            ? { 
-                ...plan, 
-                ...formData, 
-                total_exercises: totals.exercises,
-                total_sets: totals.sets
-              }
-            : plan
-        ));
+        const updatedPlan = await ApiService.updateWorkoutPlan(editingPlan.id, workoutPlanData);
+        setExistingPlans(prev => 
+          prev.map(plan => plan.id === editingPlan.id ? updatedPlan : plan)
+        );
         setSuccessMessage('Workout plan updated successfully!');
       } else {
         // Create new plan
-        const newPlan = {
-          id: Date.now(),
-          ...formData,
-          total_exercises: totals.exercises,
-          total_sets: totals.sets,
-          total_duration: '45 min',
-          created_at: new Date().toISOString().split('T')[0],
-          status: 'active'
-        };
+        const newPlan = await ApiService.createWorkoutPlan(workoutPlanData);
         setExistingPlans(prev => [newPlan, ...prev]);
         setSuccessMessage('Workout plan created successfully!');
       }
@@ -294,7 +269,7 @@ const WorkoutPlanCreator = () => {
       resetForm();
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
-      setError('Failed to save workout plan. Please try again.');
+      setError(err.message || 'Failed to save workout plan. Please try again.');
       console.error('Error saving workout plan:', err);
     } finally {
       setLoading(false);
@@ -307,11 +282,12 @@ const WorkoutPlanCreator = () => {
     
     setLoading(true);
     try {
+      await ApiService.deleteWorkoutPlan(planId);
       setExistingPlans(prev => prev.filter(plan => plan.id !== planId));
       setSuccessMessage('Workout plan deleted successfully!');
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
-      setError('Failed to delete workout plan');
+      setError(err.message || 'Failed to delete workout plan');
       console.error('Error deleting workout plan:', err);
     } finally {
       setLoading(false);
@@ -323,10 +299,19 @@ const WorkoutPlanCreator = () => {
     setFormData({
       name: plan.name,
       description: plan.description,
-      start_date: plan.start_date,
-      end_date: plan.end_date,
-      exercises: plan.exercises.map(exercise => ({ ...exercise })),
-      assigned_members: plan.assigned_members.map(member => ({ ...member }))
+      exercises: [
+        {
+          id: Date.now(),
+          exercise_name: '',
+          exercise_type: plan.type || 'strength',
+          sets: '',
+          reps: '',
+          duration: '',
+          rest_time: '',
+          notes: ''
+        }
+      ],
+      assigned_members: plan.assigned_members || []
     });
     setEditingPlan(plan);
     setIsCreating(true);
@@ -337,12 +322,18 @@ const WorkoutPlanCreator = () => {
     setFormData({
       name: `${plan.name} (Copy)`,
       description: plan.description,
-      start_date: '',
-      end_date: '',
-      exercises: plan.exercises.map(exercise => ({ 
-        ...exercise, 
-        id: Date.now() + Math.random() 
-      })),
+      exercises: [
+        {
+          id: Date.now(),
+          exercise_name: '',
+          exercise_type: plan.type || 'strength',
+          sets: '',
+          reps: '',
+          duration: '',
+          rest_time: '',
+          notes: ''
+        }
+      ],
       assigned_members: []
     });
     setIsCreating(true);
@@ -350,6 +341,9 @@ const WorkoutPlanCreator = () => {
 
   // Filter members for search
   const filteredMembers = availableMembers.filter(member => {
+    if (!member || !member.first_name || !member.last_name || !member.email) {
+      return false;
+    }
     const fullName = `${member.first_name} ${member.last_name}`.toLowerCase();
     const email = member.email.toLowerCase();
     const search = searchTerm.toLowerCase();
@@ -438,32 +432,6 @@ const WorkoutPlanCreator = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  Start Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">
-                  End Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-400"
-                  required
-                />
-              </div>
-            </div>
           </div>
 
           <div className="mb-6">
@@ -491,9 +459,21 @@ const WorkoutPlanCreator = () => {
               </button>
             </div>
 
+            {/* Schema Limitations Notice */}
+            <div className="mb-4 p-3 bg-orange-900/30 border border-orange-500/50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4 text-orange-400" />
+                <span className="text-sm font-medium text-orange-400">Schema Limitations</span>
+              </div>
+              <p className="text-xs text-orange-200">
+                Note: Exercise details are for UI reference only. The database only stores workout plan name, type, and description. 
+                See WORKOUT_PLAN_LIMITATIONS.md for details on supported features.
+              </p>
+            </div>
+
             <div className="space-y-4">
-              {formData.exercises.map((exercise, index) => {
-                const ExerciseIcon = getExerciseTypeIcon(exercise.exercise_type);
+              {(formData.exercises || []).map((exercise, index) => {
+                const ExerciseIcon = getExerciseTypeIcon(exercise?.exercise_type || 'strength');
                 return (
                   <div key={exercise.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
@@ -501,9 +481,9 @@ const WorkoutPlanCreator = () => {
                         <ExerciseIcon className="h-5 w-5 text-yellow-400" />
                         <span className="text-white font-medium">Exercise {index + 1}</span>
                       </div>
-                      {formData.exercises.length > 1 && (
+                      {(formData.exercises?.length || 0) > 1 && (
                         <button
-                          onClick={() => removeExercise(exercise.id)}
+                          onClick={() => removeExercise(exercise?.id)}
                           className="p-1 hover:bg-gray-700 rounded transition-colors"
                         >
                           <Trash2 className="h-4 w-4 text-red-400" />
@@ -699,13 +679,13 @@ const WorkoutPlanCreator = () => {
                     key={member.id}
                     className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-900/20 border border-yellow-400/20 rounded-full text-sm text-yellow-400"
                   >
-                    {member.name}
+                    {member.first_name} {member.last_name}
                     <button
                       type="button"
                       onClick={() => toggleMemberSelection({ 
                         id: member.id, 
-                        first_name: member.name.split(' ')[0], 
-                        last_name: member.name.split(' ')[1] 
+                        first_name: member.first_name, 
+                        last_name: member.last_name 
                       })}
                       className="hover:text-yellow-300"
                     >
@@ -721,7 +701,7 @@ const WorkoutPlanCreator = () => {
           <div className="flex gap-3">
             <button
               onClick={saveWorkoutPlan}
-              disabled={loading || !formData.name || !formData.start_date || !formData.end_date}
+              disabled={loading || !formData.name || !formData.description}
               className="flex-1 px-4 py-2 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Save className="h-4 w-4" />
@@ -753,7 +733,7 @@ const WorkoutPlanCreator = () => {
         </h2>
 
         <div className="space-y-4">
-          {existingPlans.map((plan) => (
+          {(existingPlans || []).map((plan) => (
             <div key={plan.id} className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
               {/* Plan Header */}
               <div className="p-4">
@@ -798,36 +778,32 @@ const WorkoutPlanCreator = () => {
                 </div>
 
                 {/* Plan Info */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-400">Duration:</span>
+                    <span className="text-gray-400">Type:</span>
+                    <p className="text-white font-medium">{getExerciseTypeLabel(plan.type)}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Created:</span>
                     <p className="text-white font-medium">
-                      {plan.start_date} to {plan.end_date}
+                      {new Date(plan.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <span className="text-gray-400">Exercises:</span>
-                    <p className="text-yellow-400 font-semibold">{plan.total_exercises} exercises</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Total Sets:</span>
-                    <p className="text-white font-medium">{plan.total_sets} sets</p>
-                  </div>
-                  <div>
                     <span className="text-gray-400">Members:</span>
-                    <p className="text-white font-medium">{plan.assigned_members.length} assigned</p>
+                    <p className="text-white font-medium">{plan.assigned_members?.length || 0} assigned</p>
                   </div>
                   <div>
                     <span className="text-gray-400">Status:</span>
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-900/20 text-green-400 border border-green-400/20">
                       <CheckCircle className="h-3 w-3" />
-                      {plan.status}
+                      Active
                     </span>
                   </div>
                 </div>
 
                 {/* Assigned Members Tags */}
-                {plan.assigned_members.length > 0 && (
+                {plan.assigned_members && plan.assigned_members.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {plan.assigned_members.map((member) => (
                       <span
@@ -835,67 +811,41 @@ const WorkoutPlanCreator = () => {
                         className="inline-flex items-center gap-1 px-2 py-1 bg-gray-700 rounded text-xs text-gray-300"
                       >
                         <Users className="h-3 w-3" />
-                        {member.name}
+                        {member.first_name} {member.last_name}
                       </span>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Expanded Exercise Details */}
+              {/* Expanded Plan Details */}
               {expandedPlan === plan.id && (
                 <div className="border-t border-gray-700 p-4 bg-gray-900/50">
-                  <h4 className="text-sm font-semibold text-white mb-3">Exercise Breakdown</h4>
-                  <div className="space-y-2">
-                    {plan.exercises.map((exercise) => {
-                      const ExerciseIcon = getExerciseTypeIcon(exercise.exercise_type);
-                      return (
-                        <div key={exercise.id} className="flex items-center gap-3 p-2 bg-gray-800 rounded">
-                          <ExerciseIcon className="h-4 w-4 text-yellow-400" />
-                          <div className="flex-1 grid grid-cols-1 md:grid-cols-6 gap-2 text-sm">
-                            <div className="md:col-span-2">
-                              <span className="text-gray-400 text-xs">Exercise:</span>
-                              <p className="text-white font-medium">{exercise.exercise_name}</p>
-                            </div>
-                            <div>
-                              <span className="text-gray-400 text-xs">Type:</span>
-                              <p className="text-white capitalize">{getExerciseTypeLabel(exercise.exercise_type)}</p>
-                            </div>
-                            <div>
-                              <span className="text-gray-400 text-xs">Sets x Reps:</span>
-                              <p className="text-yellow-400 font-medium">
-                                {exercise.sets} x {exercise.reps || exercise.duration}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-gray-400 text-xs">Rest:</span>
-                              <p className="text-white">{exercise.rest_time}</p>
-                            </div>
-                            <div>
-                              <span className="text-gray-400 text-xs">Notes:</span>
-                              <p className="text-gray-300 text-xs">{exercise.notes}</p>
-                            </div>
-                          </div>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-2">Plan Details</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-400">Plan ID:</span>
+                          <p className="text-gray-300 font-mono">{plan.id}</p>
                         </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Summary Stats */}
-                  <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-400/20 rounded-lg">
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                      <div>
-                        <p className="text-xs text-gray-400">Total Exercises</p>
-                        <p className="font-bold text-yellow-400">{plan.total_exercises}</p>
+                        <div>
+                          <span className="text-gray-400">Created by:</span>
+                          <p className="text-gray-300">{plan.created_by || 'Current Trainer'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Total Sets</p>
-                        <p className="font-bold text-white">{plan.total_sets}</p>
+                    </div>
+                    
+                    {/* Schema Limitation Notice */}
+                    <div className="p-3 bg-orange-900/20 border border-orange-500/30 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Info className="h-4 w-4 text-orange-400" />
+                        <span className="text-sm font-medium text-orange-400">Database Schema Note</span>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-400">Est. Duration</p>
-                        <p className="font-bold text-white">{plan.total_duration}</p>
-                      </div>
+                      <p className="text-xs text-orange-200">
+                        Detailed exercise information is not stored in the current database schema. 
+                        Only plan name, type, description, and member assignments are persisted.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -904,7 +854,7 @@ const WorkoutPlanCreator = () => {
           ))}
         </div>
 
-        {existingPlans.length === 0 && (
+        {(existingPlans || []).length === 0 && (
           <div className="text-center py-12">
             <Dumbbell className="h-12 w-12 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400">No workout plans created yet</p>
@@ -921,4 +871,10 @@ const WorkoutPlanCreator = () => {
   );
 };
 
-export default WorkoutPlanCreator;
+const WorkoutPlanWithErrorBoundary = () => (
+  <ErrorBoundary showDetails={true}>
+    <WorkoutPlanCreator />
+  </ErrorBoundary>
+);
+
+export default WorkoutPlanWithErrorBoundary;

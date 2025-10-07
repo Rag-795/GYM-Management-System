@@ -379,9 +379,9 @@ def main():
         db.create_all()
 
         roles = {
-            "ADMIN": "ef407cc9-6c3a-4cef-a4dd-9fa86b97184b",
-            "TRAINER": "fd0befa5-67be-4bfc-a50a-63d0897b113e",
-            "MEMBER": "a0dfb50f-ffe9-4dd0-ab63-2bc0c4c15d56"
+            "ADMIN": os.getenv("ADMIN"),
+            "TRAINER": os.getenv("TRAINER"),
+            "MEMBER": os.getenv("MEMBER")
         }
         
         # Create membership plans
