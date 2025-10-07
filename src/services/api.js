@@ -405,6 +405,8 @@ class ApiService {
   }
 
   async createWorkoutPlan(planData) {
+    console.log('API: Creating workout plan with data:', planData);
+    console.log('API: Stringified data:', JSON.stringify(planData));
     return this.request('/api/workout-plans/', {
       method: 'POST',
       body: JSON.stringify(planData),
@@ -412,6 +414,8 @@ class ApiService {
   }
 
   async updateWorkoutPlan(planId, planData) {
+    console.log('API: Updating workout plan', planId, 'with data:', planData);
+    console.log('API: Stringified data:', JSON.stringify(planData));
     return this.request(`/api/workout-plans/${planId}`, {
       method: 'PUT',
       body: JSON.stringify(planData),

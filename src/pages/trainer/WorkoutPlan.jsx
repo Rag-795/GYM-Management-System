@@ -81,6 +81,8 @@ const WorkoutPlanCreator = () => {
       
       // Handle both direct array and response with workout_plans property
       const plans = response?.workout_plans || response || [];
+      console.log('Plans extracted from response:', plans);
+      console.log('First plan structure:', plans[0]);
       setExistingPlans(Array.isArray(plans) ? plans : []);
       console.log('Set workout plans:', plans);
     } catch (error) {
@@ -249,11 +251,24 @@ const WorkoutPlanCreator = () => {
         name: formData.name,
         type: formData.exercises.length > 0 ? formData.exercises[0].exercise_type : 'strength',
         description: formData.description,
-        member_ids: formData.assigned_members.map(member => member.id)
+        assigned_members: formData.assigned_members.map(member => member.id)
       };
+      
+      console.log('Sending workout plan data:', workoutPlanData);
+      console.log('Assigned members:', formData.assigned_members);
       
       if (editingPlan) {
         // Update existing plan
+        console.log('Editing plan, editingPlan:', editingPlan);
+        console.log('Editing plan ID:', editingPlan.id);
+        
+        if (!editingPlan.id) {
+          setError('Invalid workout plan ID. Cannot update. Please refresh the page and try again.');
+          console.error('editingPlan missing ID:', editingPlan);
+          setLoading(false);
+          return;
+        }
+        
         const updatedPlan = await ApiService.updateWorkoutPlan(editingPlan.id, workoutPlanData);
         setExistingPlans(prev => 
           prev.map(plan => plan.id === editingPlan.id ? updatedPlan : plan)
@@ -296,6 +311,15 @@ const WorkoutPlanCreator = () => {
 
   // Edit workout plan
   const editWorkoutPlan = (plan) => {
+    console.log('editWorkoutPlan called with plan:', plan);
+    console.log('Plan ID:', plan.id);
+    console.log('Plan keys:', Object.keys(plan));
+    
+    if (!plan || !plan.id) {
+      setError('Invalid workout plan selected for editing');
+      return;
+    }
+    
     setFormData({
       name: plan.name,
       description: plan.description,
@@ -314,6 +338,7 @@ const WorkoutPlanCreator = () => {
       assigned_members: plan.assigned_members || []
     });
     setEditingPlan(plan);
+    console.log('Set editingPlan:', plan);
     setIsCreating(true);
   };
 
@@ -733,7 +758,12 @@ const WorkoutPlanCreator = () => {
         </h2>
 
         <div className="space-y-4">
-          {(existingPlans || []).map((plan) => (
+          {(existingPlans || []).map((plan) => {
+            if (!plan || !plan.id) {
+              console.error('Invalid plan object:', plan);
+              return null;
+            }
+            return (
             <div key={plan.id} className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
               {/* Plan Header */}
               <div className="p-4">
@@ -851,7 +881,8 @@ const WorkoutPlanCreator = () => {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {(existingPlans || []).length === 0 && (

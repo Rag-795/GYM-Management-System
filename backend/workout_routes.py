@@ -218,17 +218,25 @@ def create_workout_plan():
 
         # Handle member assignments
         assigned_member_ids = data.get('assigned_members', [])
+        logger.info(f"Received assigned_members: {assigned_member_ids}")
         if assigned_member_ids:
             valid_members = []
             for member_data in assigned_member_ids:
                 member_id = member_data.get('id') if isinstance(member_data, dict) else member_data
+                logger.info(f"Processing member_data: {member_data}, extracted member_id: {member_id}")
                 if member_id and validate_uuid(str(member_id)):
                     member = Member.query.get(member_id)
                     if member:
                         valid_members.append(member)
+                        logger.info(f"Added valid member: {member.first_name} {member.last_name}")
+                    else:
+                        logger.warning(f"Member not found for ID: {member_id}")
+                else:
+                    logger.warning(f"Invalid member ID: {member_id}")
 
             # Assign members to workout plan
             workout_plan.members = valid_members
+            logger.info(f"Assigned {len(valid_members)} members to workout plan")
 
         db.session.commit()
 
@@ -338,15 +346,23 @@ def update_workout_plan(workout_plan_id):
         # Handle member assignments
         if 'assigned_members' in data:
             assigned_member_ids = data['assigned_members']
+            logger.info(f"UPDATE: Received assigned_members: {assigned_member_ids}")
             valid_members = []
             for member_data in assigned_member_ids:
                 member_id = member_data.get('id') if isinstance(member_data, dict) else member_data
+                logger.info(f"UPDATE: Processing member_data: {member_data}, extracted member_id: {member_id}")
                 if member_id and validate_uuid(str(member_id)):
                     member = Member.query.get(member_id)
                     if member:
                         valid_members.append(member)
+                        logger.info(f"UPDATE: Added valid member: {member.first_name} {member.last_name}")
+                    else:
+                        logger.warning(f"UPDATE: Member not found for ID: {member_id}")
+                else:
+                    logger.warning(f"UPDATE: Invalid member ID: {member_id}")
 
             workout_plan.members = valid_members
+            logger.info(f"UPDATE: Assigned {len(valid_members)} members to workout plan")
 
         db.session.commit()
 
