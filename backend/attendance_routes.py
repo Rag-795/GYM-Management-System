@@ -15,6 +15,26 @@ def get_current_user():
         return None
     return User.query.get(current_user_id)
 
+def get_member_profile(user):
+    """Safely get member profile from user (handles backref list issue)"""
+    if not user:
+        return None
+    profile = user.member_profile
+    # member_profile is a list due to backref, get first item
+    if isinstance(profile, list):
+        return profile[0] if profile else None
+    return profile
+
+def get_trainer_profile(user):
+    """Safely get trainer profile from user (handles backref list issue)"""
+    if not user:
+        return None
+    profile = user.trainer_profile
+    # trainer_profile is a list due to backref, get first item
+    if isinstance(profile, list):
+        return profile[0] if profile else None
+    return profile
+
 def is_admin(user):
     """Check if user has admin role"""
     if not user or not user.role:
@@ -41,11 +61,27 @@ def is_member(user):
 
 def is_trainer(user):
     """Check if user has trainer role"""
-    return user and user.role and user.role.name == 'TRAINER'
+    if not user or not user.role:
+        return False
+    # Handle both uppercase and lowercase role names
+    role_name = user.role.name.upper() if user.role.name else ''
+    return role_name == 'TRAINER'
 
 def is_member(user):
     """Check if user has member role"""
-    return user and user.role and user.role.name == 'MEMBER'
+    if not user or not user.role:
+        return False
+    # Handle both uppercase and lowercase role names
+    role_name = user.role.name.upper() if user.role.name else ''
+    return role_name == 'MEMBER'
+
+def is_trainer(user):
+    """Check if user has trainer role"""
+    return user and user.role and user.role.name.lower() == 'trainer'
+
+def is_member(user):
+    """Check if user has member role"""
+    return user and user.role and user.role.name.lower() == 'member'
 
 @attendance_bp.route('/', methods=['GET'])
 @jwt_required()
@@ -72,16 +108,18 @@ def get_attendance_records():
         # Apply role-based filtering
         if is_member(current_user):
             # Members can only see their own attendance
-            if current_user.member_profile:
-                query = query.filter(Attendance.member_id == current_user.member_profile.id)
+            member_profile = get_member_profile(current_user)
+            if member_profile:
+                query = query.filter(Attendance.member_id == member_profile.id)
             else:
                 return jsonify({'error': 'Member profile not found'}), 404
         elif is_trainer(current_user):
             # Trainers can see their own sessions and all attendance if no specific filters
             if not (member_id or trainer_id):
                 # If no specific filters, show trainer's own sessions
-                if current_user.trainer_profile:
-                    query = query.filter(Attendance.trainer_id == current_user.trainer_profile.id)
+                trainer_profile = get_trainer_profile(current_user)
+                if trainer_profile:
+                    query = query.filter(Attendance.trainer_id == trainer_profile.id)
                 else:
                     return jsonify({'error': 'Trainer profile not found'}), 404
         elif not is_admin(current_user):
@@ -173,9 +211,10 @@ def check_in():
         # Determine member_id based on role
         if is_member(current_user):
             # Members can only check themselves in
-            if not current_user.member_profile:
+            member_profile = get_member_profile(current_user)
+            if not member_profile:
                 return jsonify({'error': 'Member profile not found'}), 404
-            member_id = current_user.member_profile.id
+            member_id = member_profile.id
         elif is_admin(current_user) or is_trainer(current_user):
             # Admins and trainers can check in members
             if not data or not data.get('member_id'):
@@ -260,9 +299,10 @@ def check_out():
         # Determine member_id based on role
         if is_member(current_user):
             # Members can only check themselves out
-            if not current_user.member_profile:
+            member_profile = get_member_profile(current_user)
+            if not member_profile:
                 return jsonify({'error': 'Member profile not found'}), 404
-            member_id = current_user.member_profile.id
+            member_id = member_profile.id
         elif is_admin(current_user) or is_trainer(current_user):
             # Admins and trainers can check out members
             if not data or not data.get('member_id'):
@@ -370,9 +410,10 @@ def get_attendance_statistics():
         
         # Role-based access control
         if is_member(current_user):
-            if not current_user.member_profile:
+            member_profile = get_member_profile(current_user)
+            if not member_profile:
                 return jsonify({'error': 'Member profile not found'}), 404
-            member_id = str(current_user.member_profile.id)  # Members can only see their own stats
+            member_id = str(member_profile.id)  # Members can only see their own stats
         elif not (is_admin(current_user) or is_trainer(current_user)):
             return jsonify({'error': 'Insufficient permissions'}), 403
         

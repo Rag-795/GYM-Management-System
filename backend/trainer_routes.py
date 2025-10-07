@@ -27,6 +27,26 @@ def get_current_user():
         logger.error(f"Error getting current user: {str(e)}")
         return None
 
+def get_trainer_profile(user):
+    """Safely get trainer profile from user (handles backref list issue)"""
+    if not user:
+        return None
+    profile = user.trainer_profile
+    # trainer_profile is a list due to backref, get first item
+    if isinstance(profile, list):
+        return profile[0] if profile else None
+    return profile
+
+def get_trainer_profile(user):
+    """Safely get trainer profile from user (handles backref list issue)"""
+    if not user:
+        return None
+    profile = user.trainer_profile
+    # trainer_profile is a list due to backref, get first item
+    if isinstance(profile, list):
+        return profile[0] if profile else None
+    return profile
+
 def is_admin(user):
     """Check if user has admin role"""
     if not user or not user.role:

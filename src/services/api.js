@@ -69,6 +69,12 @@ class ApiService {
     });
   }
 
+  async getCurrentUser() {
+    return this.request('/auth/me', {
+      method: 'GET',
+    });
+  }
+
   // Member endpoints
   async getMembers(params = {}) {
     const queryString = new URLSearchParams(params).toString();
